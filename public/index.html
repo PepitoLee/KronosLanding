@@ -1500,6 +1500,64 @@
         min-height: 400px
       }
     }
+
+    /* ===== MOBILE PERFORMANCE OPTIMIZATIONS ===== */
+    @media(max-width:1024px) {
+
+      /* Kill noise texture overlay - causes repaint on every scroll */
+      body::after {
+        display: none
+      }
+
+      /* Remove expensive backdrop-filter on mobile */
+      nav {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background: rgba(9, 12, 16, .95)
+      }
+
+      .ilbl {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background: rgba(13, 17, 23, .95)
+      }
+
+      .box-term {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background: rgba(10, 14, 20, .97)
+      }
+
+      .sg-item {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background: rgba(13, 17, 23, .95)
+      }
+
+      /* Simplify box-shadows on mobile */
+      .ilbl {
+        box-shadow: 0 8px 16px rgba(0, 0, 0, .4)
+      }
+
+      .box-term {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, .6)
+      }
+
+      /* Disable scanline animation in terminal */
+      .box-term::before {
+        display: none
+      }
+
+      /* Reduce hero grid animation */
+      .hgrid {
+        animation: none
+      }
+
+      /* Disable isometric section grid pseudo-element */
+      .isoS::before {
+        display: none
+      }
+    }
   </style>
 </head>
 
@@ -2052,11 +2110,19 @@
   <script>
     (function () {
 
+      const isMobile = window.innerWidth <= 1024;
+
       // ===== DOT GRID =====
       const dg = document.getElementById('hdots'); let dh = '';
-      for (let r = 0; r < 26; r++)for (let c = 0; c < 16; c++) {
+      const dotRows = isMobile ? 13 : 26;
+      const dotCols = isMobile ? 8 : 16;
+      for (let r = 0; r < dotRows; r++)for (let c = 0; c < dotCols; c++) {
         const x = 8 + c * 18, y = 8 + r * 18;
-        dh += `<circle cx="${x}" cy="${y}" r="1.2" fill="#00d4ff" opacity="0"><animate attributeName="opacity" from="0" to=".4" dur=".25s" begin="${(r * .018 + c * .025).toFixed(3)}s" fill="freeze"/></circle>`
+        if (isMobile) {
+          dh += `<circle cx="${x}" cy="${y}" r="1.2" fill="#00d4ff" opacity=".3"/>`;
+        } else {
+          dh += `<circle cx="${x}" cy="${y}" r="1.2" fill="#00d4ff" opacity="0"><animate attributeName="opacity" from="0" to=".4" dur=".25s" begin="${(r * .018 + c * .025).toFixed(3)}s" fill="freeze"/></circle>`;
+        }
       }
       dg.innerHTML = dh;
 
@@ -2077,7 +2143,7 @@
 
         let paths = '';
         const colors = ['#00d4ff', '#FFD600', '#18FFFF', '#2FFCB0', '#E930FF', '#00E58A', '#FF7A2F'];
-        const numLines = isMobile ? 42 : 36;
+        const numLines = isMobile ? 12 : 36;
 
         for (let i = 0; i < numLines; i++) {
           const c = colors[Math.floor(Math.random() * colors.length)];
@@ -2196,7 +2262,8 @@
        <animate attributeName="stroke-dashoffset" values="${len};0" dur="${dur}s" begin="${delay}s" fill="freeze" />
        </path>`;
 
-          if (Math.random() > 0.4) {
+          // Skip white tracers on mobile — they double the SVG path count
+          if (!isMobile && Math.random() > 0.4) {
             paths += `<path d="${pathD}" fill="none" stroke="#fff" stroke-width="${sw * 0.9}" opacity="0" stroke-dasharray="10 9999">
          <animate attributeName="stroke-dashoffset" values="${len};-50" dur="${dur * 0.65}s" begin="${delay + 1 + Math.random() * 4}s" repeatCount="indefinite" />
          <animate attributeName="opacity" values="0;0.9;0" dur="${dur * 0.65}s" begin="${delay + 1}s" repeatCount="indefinite" />
@@ -2204,7 +2271,11 @@
           }
         }
 
-        svg.innerHTML = `
+        if (isMobile) {
+          // No blur filter on mobile — major GPU savings
+          svg.innerHTML = `<g>${paths}</g>`;
+        } else {
+          svg.innerHTML = `
     <defs>
       <filter id="glowFlow" x="-20%" y="-20%" width="140%" height="140%">
         <feGaussianBlur stdDeviation="3.5" result="blur" />
@@ -2213,6 +2284,7 @@
     </defs>
     <g filter="url(#glowFlow)">${paths}</g>
   `;
+        }
       }
       // Render dynamically when layout settles
       setTimeout(drawStreams, 150);
@@ -2224,37 +2296,40 @@
       });
 
 
-      // ===== EYE TRACKING =====
+      // ===== EYE TRACKING (desktop only — no mouse on mobile) =====
       const ig = document.getElementById('iG'), lf = document.getElementById('hlogo');
-      let ex = 0, ey = 0, etx = 0, ety = 0, sx = 0, sy = 0, st = 0;
 
-      document.addEventListener('mousemove', e => {
-        const r = lf.getBoundingClientRect();
-        const svx = (e.clientX - r.left) * (200 / r.width);
-        const svy = (e.clientY - r.top) * (222 / r.height);
+      if (!isMobile) {
+        let ex = 0, ey = 0, etx = 0, ety = 0, sx = 0, sy = 0, st = 0;
 
-        const dx = svx - 99, dy = svy - 130.7;
-        const d = Math.sqrt(dx * dx + dy * dy);
-        const f = Math.min(d / 150, 1), ef = 1 - Math.pow(1 - f, 2);
-        if (d > .1) { etx = (dx / d) * 7 * ef; ety = (dy / d) * 4 * ef; }
-      });
+        document.addEventListener('mousemove', e => {
+          const r = lf.getBoundingClientRect();
+          const svx = (e.clientX - r.left) * (200 / r.width);
+          const svy = (e.clientY - r.top) * (222 / r.height);
 
-      (function aE() {
-        ex += (etx - ex) * .07; ey += (ety - ey) * .07;
-        st++;
-        if (st > 140) {
-          sx = (Math.random() - .5) * .25; sy = (Math.random() - .5) * .12;
-          st = Math.floor(Math.random() * 50);
-        }
-        sx *= .96; sy *= .96;
-        if (ig) ig.setAttribute('transform', `translate(${(ex + sx).toFixed(3)},${(ey + sy).toFixed(3)})`);
-        requestAnimationFrame(aE);
-      })();
+          const dx = svx - 99, dy = svy - 130.7;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          const f = Math.min(d / 150, 1), ef = 1 - Math.pow(1 - f, 2);
+          if (d > .1) { etx = (dx / d) * 7 * ef; ety = (dy / d) * 4 * ef; }
+        });
 
-      // Blink
-      const eT = document.getElementById('eT'), eB = document.getElementById('eB'); let bl = 0;
-      function bk() { if (bl) return; bl = 1; eT.style.transform = 'translateY(18px)'; eT.style.transition = 'transform .08s ease-in'; eB.style.transform = 'translateY(-18px)'; eB.style.transition = 'transform .08s ease-in'; setTimeout(() => { eT.style.transform = ''; eT.style.transition = 'transform .15s ease-out'; eB.style.transform = ''; eB.style.transition = 'transform .15s ease-out'; bl = 0 }, 150); setTimeout(() => { bk(); if (Math.random() < .12) setTimeout(bk, 250) }, 2200 + Math.random() * 4500) }
-      setTimeout(bk, 3500);
+        (function aE() {
+          ex += (etx - ex) * .07; ey += (ety - ey) * .07;
+          st++;
+          if (st > 140) {
+            sx = (Math.random() - .5) * .25; sy = (Math.random() - .5) * .12;
+            st = Math.floor(Math.random() * 50);
+          }
+          sx *= .96; sy *= .96;
+          if (ig) ig.setAttribute('transform', `translate(${(ex + sx).toFixed(3)},${(ey + sy).toFixed(3)})`);
+          requestAnimationFrame(aE);
+        })();
+
+        // Blink
+        const eT = document.getElementById('eT'), eB = document.getElementById('eB'); let bl = 0;
+        function bk() { if (bl) return; bl = 1; eT.style.transform = 'translateY(18px)'; eT.style.transition = 'transform .08s ease-in'; eB.style.transform = 'translateY(-18px)'; eB.style.transition = 'transform .08s ease-in'; setTimeout(() => { eT.style.transform = ''; eT.style.transition = 'transform .15s ease-out'; eB.style.transform = ''; eB.style.transition = 'transform .15s ease-out'; bl = 0 }, 150); setTimeout(() => { bk(); if (Math.random() < .12) setTimeout(bk, 250) }, 2200 + Math.random() * 4500) }
+        setTimeout(bk, 3500);
+      }
 
       // ===== ISOMETRIC NEURAL ENGINE (MAXIMALIST) =====
       function drawIsoEngine() {
@@ -2267,7 +2342,7 @@
         svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
 
         // --- 1. Draw Global Connections (Hyper-Creative Fiber Optics) ---
-        let cHtml = `<defs>
+        let cHtml = isMobile ? `<defs>` : `<defs>
           <filter id="gglow"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
           <filter id="gglow2"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
           <filter id="neonGl"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
@@ -2281,14 +2356,15 @@
           </linearGradient>
         </defs>`;
 
-        // Render Background Motherboard Grid
-        for (let i = 0; i < w; i += 80) {
+        // Render Background Motherboard Grid (sparser on mobile)
+        const gridStep = isMobile ? 160 : 80;
+        for (let i = 0; i < w; i += gridStep) {
           cHtml += `<line x1="${i}" y1="0" x2="${i}" y2="${h}" stroke="rgba(0,212,255,0.03)" stroke-width="1" />`;
-          if (i % 160 === 0) cHtml += `<line x1="${i}" y1="0" x2="${i}" y2="${h}" stroke="rgba(0,212,255,0.05)" stroke-width="2" />`;
+          if (!isMobile && i % 160 === 0) cHtml += `<line x1="${i}" y1="0" x2="${i}" y2="${h}" stroke="rgba(0,212,255,0.05)" stroke-width="2" />`;
         }
-        for (let j = 0; j < h; j += 80) {
+        for (let j = 0; j < h; j += gridStep) {
           cHtml += `<line x1="0" y1="${j}" x2="${w}" y2="${j}" stroke="rgba(0,212,255,0.03)" stroke-width="1" />`;
-          if (j % 160 === 0) cHtml += `<line x1="0" y1="${j}" x2="${w}" y2="${j}" stroke="rgba(0,212,255,0.05)" stroke-width="2" />`;
+          if (!isMobile && j % 160 === 0) cHtml += `<line x1="0" y1="${j}" x2="${w}" y2="${j}" stroke="rgba(0,212,255,0.05)" stroke-width="2" />`;
         }
 
         const sR = isoS.getBoundingClientRect();
@@ -2320,21 +2396,25 @@
           const pD = `M ${port.p.x},${port.p.y} C ${ctrl1X},${port.p.y} ${ctrl2X},${ey} ${ex},${ey}`;
           const gradId = isLeft ? 'url(#gradIn)' : 'url(#gradOut)';
 
-          // 1. Ambient Background Glow
-          cHtml += `<path d="${pD}" fill="none" stroke="${port.c}" stroke-width="12" filter="url(#gglow)" opacity="0.1" />`;
+          // 1. Ambient Background Glow (skip filter on mobile)
+          if (!isMobile) {
+            cHtml += `<path d="${pD}" fill="none" stroke="${port.c}" stroke-width="12" filter="url(#gglow)" opacity="0.1" />`;
+          }
 
           // 2. Main Energy Core (Thick glowing dashed)
-          cHtml += `<path d="${pD}" fill="none" stroke="${gradId}" stroke-width="3.5" filter="url(#neonGl)" opacity="0.8" stroke-dasharray="14 26" stroke-linecap="round" style="animation: ${isLeft ? 'flowIn' : 'flowOut'} 0.8s linear infinite ${!isLeft ? 'reverse' : ''}"/>`;
+          const neonFilter = isMobile ? '' : 'filter="url(#neonGl)"';
+          cHtml += `<path d="${pD}" fill="none" stroke="${gradId}" stroke-width="3.5" ${neonFilter} opacity="0.8" stroke-dasharray="14 26" stroke-linecap="round" style="animation: ${isLeft ? 'flowIn' : 'flowOut'} 0.8s linear infinite ${!isLeft ? 'reverse' : ''}"/>`;
           cHtml += `<path d="${pD}" fill="none" stroke="${gradId}" stroke-width="1.5" opacity="0.95" />`;
 
-          // 3. Multi-Layered Fiber Optics (Parallel offset splines)
-          for (let f = 1; f <= 4; f++) {
+          // 3. Multi-Layered Fiber Optics (fewer on mobile)
+          const fiberCount = isMobile ? 2 : 4;
+          for (let f = 1; f <= fiberCount; f++) {
             const offY1 = (f % 2 === 0 ? 1 : -1) * (3 + f * 4);
             const offY2 = (f % 2 === 0 ? -1 : 1) * (3 + f * 4);
             const subD = `M ${port.p.x},${port.p.y + offY1} C ${ctrl1X},${port.p.y + offY1} ${ctrl2X},${ey + offY2} ${ex},${ey + offY2}`;
 
-            cHtml += `<path d="${subD}" fill="none" stroke="${port.c}" stroke-width="1" opacity="${0.6 - f * 0.1}" stroke-dasharray="${4 + f * 3} ${12 + f * 6}" stroke-linecap="round" filter="url(#neonGl)" style="animation: ${isLeft ? 'flowIn' : 'flowOut'} ${1.2 + f * 0.4}s linear infinite ${!isLeft ? 'reverse' : ''}"/>`;
-            cHtml += `<path d="${subD}" fill="none" stroke="#ffffff" stroke-width="0.3" opacity="${0.3 - f * 0.05}" />`;
+            cHtml += `<path d="${subD}" fill="none" stroke="${port.c}" stroke-width="1" opacity="${0.6 - f * 0.1}" stroke-dasharray="${4 + f * 3} ${12 + f * 6}" stroke-linecap="round" ${neonFilter} style="animation: ${isLeft ? 'flowIn' : 'flowOut'} ${1.2 + f * 0.4}s linear infinite ${!isLeft ? 'reverse' : ''}"/>`;
+            if (!isMobile) cHtml += `<path d="${subD}" fill="none" stroke="#ffffff" stroke-width="0.3" opacity="${0.3 - f * 0.05}" />`;
           }
 
           // 4. Circuit Tracers (Orthogonal sharp lines overlapping organic curves)
@@ -2346,27 +2426,30 @@
           cHtml += `<path d="${trPath}" fill="none" stroke="${port.c}" stroke-width="1" opacity="0.4" stroke-dasharray="2 4" />`;
           cHtml += `<path d="${trPath}" fill="none" stroke="${gradId}" stroke-width="1.5" stroke-dasharray="60 400" stroke-linecap="round" style="animation: ${isLeft ? 'flowIn' : 'flowOut'} 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite ${!isLeft ? 'reverse' : ''}"/>`;
 
-          // 5. High-Fidelity Data Packets
-          const dataCount = 5 + Math.floor(Math.random() * 3);
+          // 5. Data Packets (reduced on mobile)
+          const dataCount = isMobile ? 2 : (5 + Math.floor(Math.random() * 3));
           for (let p = 0; p < dataCount; p++) {
             const paId = `pPath_${idx}_${p}`;
             const dirD = isLeft ? pD : `M ${ex},${ey} C ${ctrl2X},${ey} ${ctrl1X},${port.p.y} ${port.p.x},${port.p.y}`;
             cHtml += `<path id="${paId}" d="${dirD}" fill="none" />`;
 
-            // Cyber Packet Group
-            cHtml += `<g filter="url(#gglow2)">
+            const ggFilter = isMobile ? '' : 'filter="url(#gglow2)"';
+            cHtml += `<g ${ggFilter}>
                 <animateMotion href="#${paId}" dur="${1.8 + Math.random() * 2}s" begin="${Math.random() * 4}s" repeatCount="indefinite" />
                 <circle r="3.5" fill="#fff"/>
-                <circle r="8" fill="none" stroke="${port.c}" stroke-width="2" stroke-dasharray="4 2" style="animation: pSpin 2s linear infinite"/>
-                <line x1="-12" y1="0" x2="12" y2="0" stroke="#fff" stroke-width="1"/>
+                ${isMobile ? '' : `<circle r="8" fill="none" stroke="${port.c}" stroke-width="2" stroke-dasharray="4 2" style="animation: pSpin 2s linear infinite"/>`}
+                ${isMobile ? '' : `<line x1="-12" y1="0" x2="12" y2="0" stroke="#fff" stroke-width="1"/>`}
               </g>`;
           }
 
           // 6. Docking Nodes (Interface points)
           const nx = port.p.x, ny = port.p.y;
-          cHtml += `<circle cx="${nx}" cy="${ny}" r="8" fill="var(--bg2)" stroke="${port.c}" stroke-width="2" filter="url(#gglow)" />`;
+          const glowF = isMobile ? '' : 'filter="url(#gglow)"';
+          cHtml += `<circle cx="${nx}" cy="${ny}" r="8" fill="var(--bg2)" stroke="${port.c}" stroke-width="2" ${glowF} />`;
           cHtml += `<circle cx="${nx}" cy="${ny}" r="4" fill="${port.c}" style="animation: ppulse 1.5s infinite" />`;
-          cHtml += `<polygon points="${nx},${ny - 14} ${nx + 12},${ny - 7} ${nx + 12},${ny + 7} ${nx},${ny + 14} ${nx - 12},${ny + 7} ${nx - 12},${ny - 7}" fill="none" stroke="${port.c}" stroke-width="1" opacity="0.6" style="transform-origin:${nx}px ${ny}px; animation: pSpin 6s linear infinite"/>`;
+          if (!isMobile) {
+            cHtml += `<polygon points="${nx},${ny - 14} ${nx + 12},${ny - 7} ${nx + 12},${ny + 7} ${nx},${ny + 14} ${nx - 12},${ny + 7} ${nx - 12},${ny - 7}" fill="none" stroke="${port.c}" stroke-width="1" opacity="0.6" style="transform-origin:${nx}px ${ny}px; animation: pSpin 6s linear infinite"/>`;
+          }
         });
         svg.innerHTML = cHtml;
 
@@ -2400,8 +2483,12 @@
         // Vertical Core Pillars & Energy Nodes
         [iso(-bs * 0.85, -bs * 0.85), iso(bs * 0.85, -bs * 0.85), iso(bs * 0.85, bs * 0.85), iso(-bs * 0.85, bs * 0.85)].forEach((p, i) => {
           iHtml += `<line x1="${p.x}" y1="${p.y}" x2="${p.x}" y2="${p.y - 240}" stroke="var(--cyan)" stroke-width="3" opacity="0.9"/>`;
-          iHtml += `<line x1="${p.x}" y1="${p.y}" x2="${p.x}" y2="${p.y - 240}" stroke="#fff" filter="url(#cGl)" stroke-width="5" opacity="0.5"/>`;
-          iHtml += `<circle cx="${p.x}" cy="${p.y - 240}" r="5" fill="#fff" filter="url(#cGl)" style="animation: ppulse ${1.2 + i * 0.2}s infinite"/>`;
+          if (!isMobile) {
+            iHtml += `<line x1="${p.x}" y1="${p.y}" x2="${p.x}" y2="${p.y - 240}" stroke="#fff" filter="url(#cGl)" stroke-width="5" opacity="0.5"/>`;
+            iHtml += `<circle cx="${p.x}" cy="${p.y - 240}" r="5" fill="#fff" filter="url(#cGl)" style="animation: ppulse ${1.2 + i * 0.2}s infinite"/>`;
+          } else {
+            iHtml += `<circle cx="${p.x}" cy="${p.y - 240}" r="4" fill="var(--cyan)" opacity="0.8"/>`;
+          }
         });
 
         // Inside the glass Core: Spinning Processing Unit
