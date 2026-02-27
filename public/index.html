@@ -1,0 +1,2509 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KRONOS — ERP con Visión Artificial</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
+
+    :root {
+      --bg: #090c10;
+      --bg2: #0d1117;
+      --bg3: #131921;
+      --bg4: #1a2130;
+      --cyan: #00d4ff;
+      --teal: #007f8b;
+      --mint: #2ffcb0;
+      --aqua: #18ffff;
+      --gold: #ffd600;
+      --magenta: #e930ff;
+      --green: #00e58a;
+      --orange: #ff7a2f;
+      --red: #ff3860;
+      --dt: #004b57;
+      --s1: rgba(0, 212, 255, .06);
+      --ln: rgba(0, 212, 255, .08);
+      --t1: #ffffff;
+      --t2: rgba(255, 255, 255, .6);
+      --t3: rgba(255, 255, 255, .3);
+      --t4: rgba(255, 255, 255, .12);
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scrollbar-width: thin;
+      scrollbar-color: var(--teal) var(--bg)
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--t1);
+      font-family: 'DM Sans', sans-serif;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased
+    }
+
+    ::selection {
+      background: var(--cyan);
+      color: var(--bg)
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none
+    }
+
+    /* ===== NOISE TEXTURE ===== */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: .018;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 200px
+    }
+
+    /* ===== MONO FONT HELPER ===== */
+    .mono {
+      font-family: 'JetBrains Mono', monospace
+    }
+
+    .display {
+      font-family: 'Bebas Neue', sans-serif
+    }
+
+    /* ===== NAV ===== */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 200;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 clamp(20px, 4vw, 56px);
+      background: rgba(9, 12, 16, .75);
+      backdrop-filter: blur(30px) saturate(1.2);
+      border-bottom: 1px solid var(--ln);
+      transition: background .3s
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .nav-dot {
+      width: 7px;
+      height: 7px;
+      background: var(--cyan);
+      box-shadow: 0 0 10px var(--cyan), 0 0 30px rgba(0, 212, 255, .3);
+      animation: ndot 2.5s ease-in-out infinite
+    }
+
+    @keyframes ndot {
+
+      0%,
+      100% {
+        opacity: .7;
+        box-shadow: 0 0 8px var(--cyan)
+      }
+
+      50% {
+        opacity: 1;
+        box-shadow: 0 0 16px var(--cyan), 0 0 40px rgba(0, 212, 255, .3)
+      }
+    }
+
+    .nav-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 5px;
+      color: var(--cyan)
+    }
+
+    .nav-mid {
+      display: flex;
+      gap: 28px;
+      list-style: none
+    }
+
+    .nav-mid a {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--t3);
+      transition: color .3s;
+      position: relative;
+      padding: 4px 0
+    }
+
+    .nav-mid a::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 0;
+      height: 1px;
+      background: var(--cyan);
+      transition: width .3s
+    }
+
+    .nav-mid a:hover {
+      color: var(--cyan)
+    }
+
+    .nav-mid a:hover::after {
+      width: 100%
+    }
+
+    .nav-end {
+      display: flex;
+      gap: 10px
+    }
+
+    .nbtn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 7px 18px;
+      cursor: pointer;
+      transition: all .3s;
+      border: 1px solid
+    }
+
+    .nbtn.gh {
+      border-color: var(--t4);
+      background: 0 0;
+      color: var(--t2)
+    }
+
+    .nbtn.gh:hover {
+      border-color: var(--cyan);
+      color: var(--cyan)
+    }
+
+    .nbtn.pr {
+      border-color: var(--cyan);
+      background: var(--cyan);
+      color: var(--bg);
+      font-weight: 600
+    }
+
+    .nbtn.pr:hover {
+      background: var(--aqua);
+      box-shadow: 0 0 24px rgba(0, 212, 255, .25)
+    }
+
+    @media(max-width:860px) {
+      .nav-mid {
+        display: none
+      }
+    }
+
+    /* ===== HERO ===== */
+    .hero {
+      position: relative;
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 100px 0 60px;
+      overflow: hidden
+    }
+
+    .hcontainer {
+      position: relative;
+      z-index: 20;
+      width: 100%;
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 clamp(20px, 5vw, 64px);
+      pointer-events: none
+    }
+
+    .hcontainer>* {
+      pointer-events: auto
+    }
+
+    /* Grid bg */
+    .hgrid {
+      position: absolute;
+      inset: 0;
+      opacity: .04;
+      background-image: linear-gradient(rgba(0, 212, 255, .3) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 212, 255, .3) 1px, transparent 1px);
+      background-size: 80px 80px;
+      animation: hgShift 30s linear infinite
+    }
+
+    @keyframes hgShift {
+      to {
+        background-position: 80px 80px
+      }
+    }
+
+    .hrad {
+      position: absolute;
+      top: 45%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 1000px;
+      height: 1000px;
+      background: radial-gradient(circle, rgba(0, 212, 255, .04) 0%, transparent 60%);
+      pointer-events: none
+    }
+
+    .hrad2 {
+      position: absolute;
+      top: 30%;
+      right: 0;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(0, 212, 255, .03) 0%, transparent 70%);
+      pointer-events: none
+    }
+
+    /* Hero data streams */
+    .hstreams {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      pointer-events: none;
+      overflow: hidden
+    }
+
+    /* Dot matrix */
+    .hdots {
+      position: absolute;
+      right: 0;
+      top: 10%;
+      width: 32%;
+      height: 80%;
+      opacity: .1;
+      pointer-events: none;
+      z-index: 1
+    }
+
+    /* Hero logo container */
+    .hlogo {
+      position: relative;
+      z-index: 10;
+      width: clamp(320px, 38vw, 520px);
+      height: auto;
+      aspect-ratio: 200/222;
+      flex-shrink: 0
+    }
+
+    .hlogo::before {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border: 1px solid rgba(0, 212, 255, .1);
+      border-radius: 16px;
+      pointer-events: none
+    }
+
+    .hlogo::after {
+      content: '';
+      position: absolute;
+      inset: -70px;
+      background: radial-gradient(ellipse, rgba(0, 212, 255, .06) 0%, transparent 60%);
+      z-index: -1;
+      animation: fGlow 5s ease-in-out infinite;
+      pointer-events: none
+    }
+
+    @keyframes fGlow {
+
+      0%,
+      100% {
+        opacity: .3
+      }
+
+      50% {
+        opacity: 1
+      }
+    }
+
+    .hlogo svg {
+      width: 100%;
+      height: 100%;
+      border-radius: 14px;
+      display: block
+    }
+
+    /* Hero headline */
+    .htxt {
+      position: relative;
+      z-index: 20;
+      width: 100%;
+      max-width: 660px;
+      margin-right: 40px
+    }
+
+    .htxt::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: -10%;
+      width: 120%;
+      height: 140%;
+      transform: translateY(-50%);
+      background: radial-gradient(circle, rgba(9, 12, 16, .8) 0%, transparent 70%);
+      z-index: -1;
+      pointer-events: none
+    }
+
+    .htag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      opacity: 0;
+      animation: sUp .7s ease-out 2.6s both
+    }
+
+    .htag::before {
+      content: '';
+      width: 32px;
+      height: 1px;
+      background: var(--cyan);
+      box-shadow: 0 0 8px var(--cyan)
+    }
+
+    .hh1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(52px, 7vw, 96px);
+      line-height: .92;
+      letter-spacing: 2px;
+      opacity: 0;
+      animation: sUp .7s ease-out 2.8s both
+    }
+
+    .hh1 .ac {
+      background: linear-gradient(135deg, var(--cyan), var(--mint));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text
+    }
+
+    .hsub {
+      font-size: 15px;
+      color: var(--t2);
+      margin-top: 16px;
+      line-height: 1.7;
+      max-width: 480px;
+      font-weight: 300;
+      opacity: 0;
+      animation: sUp .7s ease-out 3s both
+    }
+
+    .hctas {
+      display: flex;
+      gap: 14px;
+      margin-top: 28px;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: sUp .7s ease-out 3.2s both
+    }
+
+    .ctab {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 13px 28px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all .3s;
+      cursor: pointer;
+      border: 1px solid
+    }
+
+    .ctab.p {
+      background: var(--cyan);
+      color: var(--bg);
+      border-color: var(--cyan);
+      font-weight: 600
+    }
+
+    .ctab.p:hover {
+      background: var(--aqua);
+      box-shadow: 0 0 40px rgba(0, 212, 255, .3);
+      transform: translateY(-2px)
+    }
+
+    .ctab.s {
+      background: 0 0;
+      color: var(--cyan);
+      border-color: rgba(0, 212, 255, .25)
+    }
+
+    .ctab.s:hover {
+      border-color: var(--cyan);
+      box-shadow: 0 0 20px rgba(0, 212, 255, .1);
+      transform: translateY(-2px)
+    }
+
+    /* Scroll indicator */
+    .scrl {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      opacity: 0;
+      animation: sUp .6s ease-out 3.6s both
+    }
+
+    .scrl span {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--t3)
+    }
+
+    .scrl .sbar {
+      width: 1px;
+      height: 32px;
+      background: linear-gradient(to bottom, var(--cyan), transparent);
+      animation: sPulse 2s ease-in-out infinite
+    }
+
+    @keyframes sPulse {
+
+      0%,
+      100% {
+        height: 32px;
+        opacity: .4
+      }
+
+      50% {
+        height: 50px;
+        opacity: 1
+      }
+    }
+
+    @keyframes sUp {
+      from {
+        opacity: 0;
+        transform: translateY(28px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    /* ===== ISO SECTION (Arquitectura IA - Maximalist) ===== */
+    .isoS {
+      position: relative;
+      padding: clamp(80px, 12vh, 160px) 0;
+      overflow: hidden;
+      background: var(--bg2);
+      border-top: 1px solid var(--ln)
+    }
+
+    .isoS::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: .02;
+      background-image: linear-gradient(rgba(0, 212, 255, .5) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 212, 255, .5) 1px, transparent 1px);
+      background-size: 64px 64px;
+      pointer-events: none;
+    }
+
+    .conn-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none
+    }
+
+    .sec-hd {
+      text-align: center;
+      margin-bottom: clamp(50px, 8vh, 100px);
+      position: relative;
+      z-index: 5;
+      padding: 0 20px
+    }
+
+    .sec-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px
+    }
+
+    .sec-tag::before,
+    .sec-tag::after {
+      content: '';
+      width: 20px;
+      height: 1px;
+      background: var(--cyan)
+    }
+
+    .sec-h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(36px, 5vw, 72px);
+      letter-spacing: 2px;
+      line-height: 1
+    }
+
+    .sec-h2 .ac {
+      background: linear-gradient(135deg, var(--cyan), var(--mint));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text
+    }
+
+    .sec-p {
+      color: var(--t2);
+      font-size: 16px;
+      margin-top: 20px;
+      max-width: 680px;
+      margin-inline: auto;
+      line-height: 1.7;
+      font-weight: 300
+    }
+
+    /* Architecture Master Grid */
+    .arch-grid {
+      max-width: 1600px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 320px 1fr 320px;
+      gap: clamp(20px, 4vw, 60px);
+      padding: 0 clamp(20px, 4vw, 56px);
+      position: relative;
+      min-height: 700px;
+      align-items: center;
+      z-index: 5
+    }
+
+    /* Floating Labels / Data Panels */
+    .arch-panel {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 50px
+    }
+
+    .ilbl {
+      padding: 24px;
+      background: linear-gradient(180deg, rgba(13, 17, 23, .85) 0%, rgba(9, 12, 16, .95) 100%);
+      border: 1px solid rgba(0, 212, 255, .1);
+      border-radius: 8px;
+      backdrop-filter: blur(20px);
+      transition: transform .4s cubic-bezier(0.4, 0, 0.2, 1), border-color .4s;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, .6);
+      position: relative;
+      opacity: 0;
+      animation: sUp 0.8s ease-out both;
+    }
+
+    .ilbl:hover {
+      border-color: var(--cyan);
+      transform: translateY(-6px)
+    }
+
+    .ilbl.input-node::after {
+      content: '';
+      position: absolute;
+      right: -6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 6px;
+      height: 24px;
+      background: var(--cyan);
+      border-radius: 0 4px 4px 0;
+      box-shadow: 0 0 12px var(--cyan)
+    }
+
+    .ilbl.output-node::before {
+      content: '';
+      position: absolute;
+      left: -6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 6px;
+      height: 24px;
+      border-radius: 4px 0 0 4px
+    }
+
+    .ilbl#node-out-1::before {
+      background: var(--magenta);
+      box-shadow: 0 0 12px var(--magenta)
+    }
+
+    .ilbl#node-out-2::before {
+      background: var(--gold);
+      box-shadow: 0 0 12px var(--gold)
+    }
+
+    .ilbl .ilt {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--t1);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, .05);
+      padding-bottom: 14px
+    }
+
+    .ilbl .ild2 {
+      font-size: 13px;
+      color: var(--t2);
+      line-height: 1.6;
+      font-weight: 300
+    }
+
+    .arch-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 20px
+    }
+
+    .atag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 1px;
+      padding: 5px 10px;
+      background: rgba(0, 212, 255, .05);
+      border: 1px solid rgba(0, 212, 255, .2);
+      color: var(--t3);
+      border-radius: 4px
+    }
+
+    /* Central CPU Wrapper */
+    .iso-wrap {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 700px;
+      display: flex;
+      align-items: center;
+      justify-content: center
+    }
+
+    .iso-svg {
+      position: absolute;
+      width: 120%;
+      height: 120%;
+      left: -10%;
+      top: -10%;
+      pointer-events: none
+    }
+
+    /* Inner Terminal inside the box */
+    .box-term {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 340px;
+      background: rgba(10, 14, 20, .85);
+      border: 1px solid rgba(0, 212, 255, .25);
+      border-radius: 12px;
+      padding: 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      line-height: 1.7;
+      color: var(--t2);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .8), inset 0 0 30px rgba(0, 212, 255, .08);
+      z-index: 20;
+      backdrop-filter: blur(12px) saturate(150%);
+    }
+
+    .box-term::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 212, 255, .5);
+      opacity: .5;
+      pointer-events: none;
+      mask-image: linear-gradient(to bottom, black 50%, transparent);
+      -webkit-mask-image: -webkit-linear-gradient(bottom, black 10%, transparent 50%)
+    }
+
+    .box-term::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(transparent, rgba(0, 212, 255, .05) 50%, transparent);
+      background-size: 100% 4px;
+      opacity: .4;
+      pointer-events: none;
+      animation: scanLineTerm 4s linear infinite;
+      border-radius: 12px
+    }
+
+    @keyframes scanLineTerm {
+      to {
+        background-position: 0 100%
+      }
+    }
+
+    .bt-hl {
+      color: var(--t1);
+      margin-bottom: 10px;
+      display: inline-block;
+      font-size: 12px
+    }
+
+    .bt-div {
+      color: rgba(0, 212, 255, .2);
+      margin: 10px 0;
+      letter-spacing: 2px
+    }
+
+    .bt-val {
+      float: right;
+      color: var(--mint);
+      font-weight: 600
+    }
+
+    /* Speed Metrics Bar */
+    .speed-bar {
+      max-width: 1100px;
+      margin: 80px auto 0;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--ln);
+      border: 1px solid rgba(0, 212, 255, .15);
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+      z-index: 10;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, .4)
+    }
+
+    .sg-item {
+      background: rgba(13, 17, 23, .9);
+      padding: 30px 20px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(10px)
+    }
+
+    .sg-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+      opacity: 0;
+      transition: opacity .4s
+    }
+
+    .sg-item:hover::before {
+      opacity: 1
+    }
+
+    .sg-item:hover {
+      background: rgba(18, 22, 30, .9)
+    }
+
+    .sg-val {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 42px;
+      color: var(--t1);
+      margin-bottom: 8px;
+      line-height: 1;
+      text-shadow: 0 0 20px rgba(255, 255, 255, .2)
+    }
+
+    .sg-lbl {
+      font-size: 13px;
+      color: var(--t3);
+      font-weight: 300;
+      line-height: 1.4
+    }
+
+    /* ISO ANIMATIONS */
+    @keyframes flowIn {
+      from {
+        stroke-dashoffset: 300
+      }
+
+      to {
+        stroke-dashoffset: 0
+      }
+    }
+
+    @keyframes flowOut {
+      from {
+        stroke-dashoffset: -300
+      }
+
+      to {
+        stroke-dashoffset: 0
+      }
+    }
+
+    @keyframes pSpin {
+      from {
+        transform: rotate(0deg)
+      }
+
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    @keyframes ppulse {
+
+      0%,
+      100% {
+        opacity: 0.3;
+        transform: scale(0.8);
+      }
+
+      50% {
+        opacity: 1;
+        transform: scale(1.2);
+      }
+    }
+
+    @keyframes scanMove {
+      0% {
+        transform: translateX(0) translateY(0);
+        opacity: .3
+      }
+
+      50% {
+        transform: translateX(100px) translateY(50px);
+        opacity: .6
+      }
+
+      100% {
+        transform: translateX(0) translateY(0);
+        opacity: .3
+      }
+    }
+
+    @keyframes flowOut {
+      0% {
+        transform: translate(0, 0);
+        opacity: .85
+      }
+
+      100% {
+        transform: translate(120px, 60px);
+        opacity: 0
+      }
+    }
+
+    @keyframes floatIso {
+
+      0%,
+      100% {
+        transform: translate(0, 0)
+      }
+
+      50% {
+        transform: translate(-5px, -7px)
+      }
+    }
+
+    /* ===== FEATURES SECTION ===== */
+    .featS {
+      position: relative;
+      padding: clamp(60px, 10vh, 140px) clamp(20px, 5vw, 80px);
+      overflow: hidden;
+      border-top: 1px solid var(--ln)
+    }
+
+    .feat-row {
+      display: flex;
+      align-items: center;
+      gap: clamp(40px, 6vw, 100px);
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: clamp(40px, 6vh, 80px) 0
+    }
+
+    .feat-row.rev {
+      flex-direction: row-reverse
+    }
+
+    .feat-txt {
+      flex: 1;
+      min-width: 280px
+    }
+
+    .feat-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .feat-tag::before {
+      content: '■';
+      font-size: 6px;
+      color: var(--cyan)
+    }
+
+    .feat-h3 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(30px, 4vw, 52px);
+      letter-spacing: 1px;
+      line-height: 1.05;
+      margin-bottom: 14px
+    }
+
+    .feat-p {
+      color: var(--t2);
+      font-size: 14px;
+      line-height: 1.7;
+      font-weight: 300;
+      margin-bottom: 20px
+    }
+
+    .feat-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap
+    }
+
+    .ftag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border: 1px solid var(--ln);
+      color: var(--cyan);
+      transition: all .3s
+    }
+
+    .ftag:hover {
+      border-color: var(--cyan);
+      background: rgba(0, 212, 255, .06)
+    }
+
+    .feat-vis {
+      flex: 1;
+      min-width: 280px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 300px
+    }
+
+    /* Feature card visualizations */
+    .fcard {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      aspect-ratio: 4/3;
+      background: var(--bg3);
+      border: 1px solid var(--ln);
+      border-radius: 12px;
+      overflow: hidden
+    }
+
+    .fcard::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--cyan), transparent)
+    }
+
+    .fcard-inner {
+      padding: 24px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between
+    }
+
+    /* Color bars inside feature cards */
+    .cbars {
+      display: flex;
+      flex-direction: column;
+      gap: 6px
+    }
+
+    .cbar {
+      height: var(--h, 6px);
+      border-radius: 2px;
+      width: 0;
+      animation: cbarIn 1.2s ease-out var(--dl) forwards
+    }
+
+    @keyframes cbarIn {
+      to {
+        width: var(--w)
+      }
+    }
+
+    /* Dot matrix inside cards */
+    .cdots {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 3px;
+      opacity: .3
+    }
+
+    .cdot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--cyan)
+    }
+
+    /* Data card mini-icons */
+    .dicons {
+      display: flex;
+      gap: 12px;
+      align-items: center
+    }
+
+    .dicon {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      animation: floatIso 4s ease-in-out var(--dl, 0s) infinite
+    }
+
+    /* ===== MODULES GRID ===== */
+    .modS {
+      position: relative;
+      padding: clamp(60px, 10vh, 140px) clamp(20px, 5vw, 80px);
+      overflow: hidden;
+      background: var(--bg2);
+      border-top: 1px solid var(--ln)
+    }
+
+    .modG {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1px;
+      max-width: 1200px;
+      margin: 0 auto;
+      background: var(--ln)
+    }
+
+    .mdc {
+      background: var(--bg2);
+      padding: 28px 24px;
+      transition: all .4s;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer
+    }
+
+    .mdc::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+      transform: scaleX(0);
+      transition: transform .4s;
+      transform-origin: left
+    }
+
+    .mdc:hover {
+      background: rgba(0, 212, 255, .03)
+    }
+
+    .mdc:hover::after {
+      transform: scaleX(1)
+    }
+
+    .mdc-i {
+      font-size: 24px;
+      margin-bottom: 12px;
+      display: block
+    }
+
+    .mdc-n {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 1px;
+      margin-bottom: 6px
+    }
+
+    .mdc-d {
+      font-size: 12px;
+      color: var(--t2);
+      line-height: 1.5;
+      font-weight: 300
+    }
+
+    .mdc-t {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-top: 12px;
+      opacity: 0;
+      transition: opacity .3s;
+      display: flex;
+      align-items: center;
+      gap: 6px
+    }
+
+    .mdc-t::before {
+      content: '';
+      width: 8px;
+      height: 1px;
+      background: var(--cyan)
+    }
+
+    .mdc:hover .mdc-t {
+      opacity: 1
+    }
+
+    /* ===== STATS ===== */
+    .statS {
+      position: relative;
+      padding: clamp(50px, 8vh, 100px) clamp(20px, 5vw, 80px);
+      border-top: 1px solid var(--ln);
+      overflow: hidden
+    }
+
+    .statS::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px;
+      height: 300px;
+      background: radial-gradient(ellipse, rgba(0, 212, 255, .04), transparent 70%);
+      pointer-events: none
+    }
+
+    .statG {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      max-width: 1000px;
+      margin: 0 auto
+    }
+
+    .sti {
+      text-align: center;
+      padding: 32px 16px;
+      position: relative
+    }
+
+    .sti+.sti::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 20%;
+      height: 60%;
+      width: 1px;
+      background: var(--ln)
+    }
+
+    .stn {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(40px, 6vw, 72px);
+      background: linear-gradient(135deg, var(--cyan), var(--mint));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1
+    }
+
+    .stl {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--t3);
+      margin-top: 10px
+    }
+
+    @media(max-width:700px) {
+      .statG {
+        grid-template-columns: repeat(2, 1fr)
+      }
+
+      .sti:nth-child(3)::before {
+        display: none
+      }
+    }
+
+    /* ===== CTA ===== */
+    .ctaS {
+      position: relative;
+      padding: clamp(80px, 12vh, 160px) 20px;
+      text-align: center;
+      border-top: 1px solid var(--ln);
+      overflow: hidden
+    }
+
+    .ctaS::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(circle, rgba(0, 212, 255, .05), transparent 55%);
+      pointer-events: none
+    }
+
+    .cta-h {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(44px, 6vw, 80px);
+      letter-spacing: 2px;
+      line-height: .95;
+      margin-bottom: 18px
+    }
+
+    .cta-h .ac {
+      background: linear-gradient(135deg, var(--cyan), var(--mint));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text
+    }
+
+    .cta-sb {
+      color: var(--t2);
+      font-size: 16px;
+      max-width: 480px;
+      margin: 0 auto 36px;
+      line-height: 1.6;
+      font-weight: 300
+    }
+
+    .cta-btns {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap
+    }
+
+    .cta-price {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--t3);
+      margin-top: 20px;
+      letter-spacing: 1px
+    }
+
+    .cta-price b {
+      color: var(--cyan);
+      font-weight: 600
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      padding: 32px clamp(20px, 5vw, 80px);
+      border-top: 1px solid var(--ln);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px
+    }
+
+    .fbrand {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: var(--t3)
+    }
+
+    .flinks {
+      display: flex;
+      gap: 20px
+    }
+
+    .flinks a {
+      font-size: 12px;
+      color: var(--t3);
+      transition: color .3s
+    }
+
+    .flinks a:hover {
+      color: var(--cyan)
+    }
+
+    /* ===== SCROLL REVEAL ===== */
+    .rv {
+      opacity: 0;
+      transform: translateY(36px);
+      transition: opacity .7s ease-out, transform .7s ease-out
+    }
+
+    .rv.vis {
+      opacity: 1;
+      transform: translateY(0)
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media(max-width:1024px) {
+      .hcontainer {
+        flex-direction: column-reverse;
+        text-align: center;
+        gap: 40px;
+        justify-content: center
+      }
+
+      .htxt {
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0
+      }
+
+      .hlogo {
+        width: clamp(220px, 40vw, 360px);
+        margin: 0 auto
+      }
+
+      .htag,
+      .hctas {
+        justify-content: center
+      }
+
+      .arch-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+        min-height: auto
+      }
+
+      .iso-wrap {
+        min-height: 500px;
+        margin: 40px 0
+      }
+
+      .arch-panel:last-child {
+        grid-row: 3
+      }
+
+      .speed-bar {
+        grid-template-columns: repeat(2, 1fr);
+        margin: 40px 20px 0
+      }
+
+      .box-term {
+        width: 90%;
+        max-width: 320px
+      }
+    }
+
+    @media(max-width:768px) {
+
+      .feat-row,
+      .feat-row.rev {
+        flex-direction: column
+      }
+
+      .hstreams {
+        opacity: .3
+      }
+
+      .hh1 {
+        font-size: clamp(46px, 10vw, 60px)
+      }
+
+      .hsub {
+        font-size: 14px;
+        padding: 0 10px
+      }
+
+      .hlogo {
+        width: clamp(260px, 65vw, 400px);
+        transform: scale(1.1);
+        margin-bottom: 10px
+      }
+
+      .speed-bar {
+        grid-template-columns: 1fr
+      }
+
+      .iso-wrap {
+        min-height: 400px
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ===== NAV ===== -->
+  <nav id="nav">
+    <div class="nav-logo">
+      <div class="nav-dot"></div><span class="nav-name">KRONOS</span>
+    </div>
+    <ul class="nav-mid">
+      <li><a href="#iso">Plataforma</a></li>
+      <li><a href="#feat">Características</a></li>
+      <li><a href="#mods">Módulos</a></li>
+      <li><a href="#stats">Métricas</a></li>
+      <li><a href="#cta">Contacto</a></li>
+    </ul>
+    <div class="nav-end">
+      <button class="nbtn gh">Login</button>
+      <button class="nbtn pr">Demo Gratis</button>
+    </div>
+  </nav>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero" id="hero">
+    <div class="hgrid"></div>
+    <div class="hrad"></div>
+    <div class="hrad2"></div>
+
+    <!-- Dynamic Data Streams -->
+    <svg class="hstreams" id="hstreams"></svg>
+
+    <!-- Dot Grid -->
+    <svg class="hdots" id="hdots" viewBox="0 0 300 500"></svg>
+
+
+    <div class="hcontainer">
+      <!-- Headline -->
+      <div class="htxt">
+        <div class="htag">[ ERP INTELIGENTE · HECHO EN PERÚ ]</div>
+        <h1 class="hh1">CONTROL TOTAL CON<br><span class="ac">VISIÓN ARTIFICIAL</span></h1>
+        <p class="hsub">14 módulos integrados con IA. Finanzas, planillas, productividad, NPS y auditoría — diseñado
+          para empresas peruanas que necesitan dominar sus datos.</p>
+        <div class="hctas">
+          <a class="ctab p" href="#">Comenzar Ahora →</a>
+          <a class="ctab s" href="#">Ver Demo en Vivo</a>
+        </div>
+      </div>
+
+      <!-- KRONOS LOGO -->
+      <div class="hlogo" id="hlogo">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 222" id="msvg">
+          <path d="m200 .11h-200v221.8h200z" fill="#0A0D13" />
+          <path
+            d="m199.9 0-199.9.11v67.34l60.84 36.27-16.76 8.66 12.16-1.26-13.15 6.07 17.82-1.26-60.91 13.57v37.32l26.41-13.56 14.5 13.43 15.26-8.53 21.82 10.58 4.92-6.33 8.4 7.22 18.41-3.87 9.5-5.15 15.59 9.02 3.13-7.48 9.17 5.66 11.11-5.66 13.01 1.64 5.88-3.18 22.83 4.5v-25.02l-37.86-.46 14.77-4.27 23.09-3.87v-12.17l-12.75-1.26 12.75-17.89v-6.85l-11.9-3.19 11.9-2.23v-10.71l-6.15-.99 3.92-3.19 2.23 1.39z"
+            fill="url(#g0)" opacity=".2" style="animation:gridP 4s ease-in-out infinite" />
+          <path
+            d="m200 91.54-32.08-1.41 18.74-9.74-48.65 29.51 32.21-14.69-23.31 14.69 10.72-3.74-4.46 3.74 4.07-.86-9.54 4.75-10.72-2.23 12.16 4.5-11.9-2.36-8.01-11.64-9.04 1.79 7.13-11.78-7.13 10.85-3.53-2.75-2.64.93-5.88-1.86.92.93-3.53-1.39 2.22-.93-3.53-.46-3.93.46-2.22-6.34-.45 5.41-9.47-6.79-.92 4.49-4.92-2.23-1.38 5.46-2.64-3.63-7.13 9.5-4.92-4.48-10.72-3.5-15.46-7.24 11.58 7.96-11.12-3.14 12.03 5.46 15.03 3.68-12.42-2.29-17.14-9.12-1.77 2.27-1.77.47 1.32-1.39-9.47-16.2 8.4 9.06-7.07-5.4-.45.46.91 2.23 6.29 4.96-21.36-12.2 12.42 10.81-25.41-15.79v30.3l30.28 13.07-4.92-5.89 19.31 8.58-2.64.47-13.97-6.83-.91.93 13.44 6.33-40.65-7.26v17.43l31.66-3.18-31.66 4.96v3.18l25.42-.93-25.42 1.42v17.89l11.11-4.03-11.11 10.35v9.5l14.43-8.02-4.4 4.93 8-3.18-.91 1.8 6.29-2.69.91.89 4.92-2.71 1.38.96 3.46-2.75 3.06 1.27 4.43 5.46 19.27-8.46 8.01 5.4 1.77 1.36 4.49 1.73 5.35-3.15-2.23 6.3 5.88-3.61 8.4 2.69 4.92-2.69 8.43 2.26 10.72-4.06 5.35-2.71 8 9.51-1.38-6.8 8.43 4.95-5.29-5.84 4.43 1.35-2.64-4.5 6.29 2.23 3.46 3.61 4.46-1.8 7.13 3.18 5.42-2.72 6.75 2.72 7.54-2.26 12.13 3.14 11.18-1.8-2.71-1.8 3.06.93-37.88-14.56 9.46 3.18-9.46-6.33 15.99 6.77-3.53-3.62-6.29-2.69 6.29-.46 3.53-3.61h23.64v-1.8l-21.82 1.8v-.46l21.88-.93v-9.5l-9.93-.46 9.87-2.72v-26.31l-3.53.93 3.59-3.12v-1.79l-8.46 3.18 8.46-4.1z"
+            fill="url(#g1)" opacity=".4" style="animation:netP 3s ease-in-out infinite alternate" />
+          <!-- Chart -->
+          <path
+            d="m142.7 85.07-12.36-34.46c-.19-.56-.98-.69-1.37-.16l-17.07 22.01-11.58-34.25c-.26-.8-1.45-.8-1.71 0l-11.29 33.98-16.68-21.68c-.39-.53-1.24-.39-1.44.24l-12.78 34.39c-.26.72.33 1.51 1.11 1.51l83.92-.06c.85 0 1.51-.86 1.25-1.52z"
+            fill="url(#g10)" stroke="url(#g11)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"
+            style="stroke-dasharray:350;stroke-dashoffset:350;animation:drawChart 2.5s ease-out .5s forwards" />
+          @keyframes drawChart{to{stroke-dashoffset:0}}
+          <!-- Eye -->
+          <path
+            d="m99.77 101.5c-31.57 0-54.52 14.07-71.72 28.95-.91.8-.84 1.76.07 2.46 16.29 13.14 37.98 28.23 71.39 28.23 29.53 0 54.15-15.09 72.61-28.86.92-.73.72-1.66-.2-2.45-15.2-13.5-38.19-28.33-72.15-28.33z"
+            fill="url(#g13)" stroke="url(#g14)" stroke-width="2" />
+          <clipPath id="eC">
+            <path
+              d="m99.77 101.5c-31.57 0-54.52 14.07-71.72 28.95-.91.8-.84 1.76.07 2.46 16.29 13.14 37.98 28.23 71.39 28.23 29.53 0 54.15-15.09 72.61-28.86.92-.73.72-1.66-.2-2.45-15.2-13.5-38.19-28.33-72.15-28.33z" />
+          </clipPath>
+          <g clip-path="url(#eC)">
+            <path
+              d="m99.71 105.6c-26.35 0-46.55 11.02-63.1 24.79-.59.49-.59.96.07 1.49 15.13 12.11 32.43 23.67 62.27 23.67 25.86 0 47.18-11.89 64.48-23.67.72-.53.66-1-.06-1.59-14.76-12.17-35.31-24.69-63.66-24.69z"
+              fill="url(#g15)" stroke="url(#g16)" stroke-width="1.5" />
+            <g id="iG">
+              <path
+                d="m98.95 107.4c-11.94 0-22 10.97-22 24.37 0 12.93 9.6 22.94 21.51 22.94 12.81 0 22.88-10.43 22.88-23.84 0-12.93-9.63-23.47-22.39-23.47z"
+                fill="url(#g18)" stroke="url(#g19)" stroke-width="2" />
+              <path
+                d="m98.95 110.5c-10.2 0-18.47 9.18-18.47 20.56 0 10.82 8.53 19.71 18.73 19.71 10.62 0 18.96-9.29 18.96-20.67 0-10.82-8.59-19.6-19.22-19.6z"
+                fill="url(#g20)" stroke="url(#g21)" stroke-width="2" />
+              <path
+                d="m98.95 115.1c-7.64 0-13.93 7.14-13.93 15.64 0 8.19 6.68 15.19 14.32 15.19 8.07 0 14.55-7.33 14.55-16.05 0-8.23-6.81-14.78-14.94-14.78z"
+                fill="url(#g22)" opacity=".5" />
+              <ellipse cx="99" cy="130.7" rx="5.5" ry="6" fill="#020a0d" opacity=".85" />
+              <ellipse cx="99" cy="130.7" rx="4" ry="4.3" fill="#010508" />
+              <ellipse cx="99" cy="130.7" rx="4" ry="4.3" fill="url(#pG)" opacity=".5"
+                style="animation:ppulse 2.5s ease-in-out infinite" />
+              <ellipse cx="95.5" cy="126" rx="2.5" ry="2" fill="#fff" opacity=".65" filter="url(#rB)" />
+              <ellipse cx="102" cy="134" rx="1" ry=".8" fill="#fff" opacity=".25" />
+              <path d="m99.44 121-.49 9.63.76.06-.27-9.69z" fill="#fff"
+                style="transform-origin:99.44px 130.1px;animation:hH 8s linear infinite" />
+              <path d="m99.34 130.1-8.49 9.44 8.86-8.78-.37-.66z" fill="#fff"
+                style="transform-origin:99.34px 130.1px;animation:mH 4s linear infinite" />
+              <path d="m99.34 130.1 7.58.76-7.58.7z" fill="#fff"
+                style="transform-origin:99.34px 130.1px;animation:sH 2s linear infinite" />
+            </g>
+            <rect id="eT" x="20" y="80" width="165" height="50" fill="#0A0D13" />
+            <rect id="eB" x="20" y="155" width="165" height="50" fill="#0A0D13" />
+          </g>
+          <!-- Gears -->
+          <path
+            d="m54.71 123.8v1.59c-1.15.4-2.13 1.23-2.79 2.25l-1.51-.19v4.49l1.32-.2c.33 1.36 1.18 2.52 2.39 3.31l-.49 1.56 3.92 1.69.59-1.49c1.31.13 2.56-.27 3.61-.96l1.08 1.15 3-3.27-1.21-1.13c.33-1.06.39-2.22.13-3.37l1.61-.73-1.9-3.77-1.7.73c-.92-.93-2.13-1.53-3.44-1.72v-1.39zm.52 3.91c2.39-1.09 5.03.66 4.9 3.3-.26 2.92-3.56 4.04-5.62 1.99-1.67-1.79-1.21-4.3.72-5.29z"
+            fill="url(#g23)" opacity=".5"
+            style="transform-origin:58.36px 130.3px;animation:rotGL 12s linear infinite" />
+          <path
+            d="m143.7 123.8v1.59c-1.45.33-2.76 1.29-3.61 2.58l-1.51-.46-1.44 4.23 1.57.3c.2 1.36.92 2.61 2.03 3.47l-1.04 1.3 3.59 2.02 1.01-1.53c1.45.27 3-.13 4.31-1.06l1.31.93 2.43-3.57-1.12-1c.46-1.36.52-2.88.07-4.36l1.31-.93-2.49-2.98-1.38.8c-1.11-.86-2.49-1.39-4-1.39zm.52 4.24c2.58-.27 4.6 2.31 3.42 4.89-1.51 3.05-5.72 2.12-5.98-1.19-.13-1.92 1.18-3.5 2.56-3.7z"
+            fill="url(#g27)" opacity=".5"
+            style="transform-origin:144.7px 130.7px;animation:rotGR 12s linear infinite" />
+          <!-- KRONOS -->
+          <path
+            d="m182 171.1-2.88 6.3h-14c-1.9 0-2.42 1.06-2.42 2.15 0 1.36.98 2.15 2.36 2.15h8c5.68 0 8.25 4.43 8.25 8.3 0 4.33-3.06 8.39-7.86 8.39h-17.3l2.49-6.77h14c1.9 0 2.29-1.29 2.29-2.15 0-1.12-.78-2.05-2.29-2.05h-7c-5.22 0-8.09-3.47-8.09-8.47 0-4.06 2.36-7.86 7.84-7.86h16.61zm-98.26 0c-6.09 0-8.31 4.96-8.31 8.58v9.26c0 4.57 2.8 9.26 9.02 9.26h5.55c6.41 0 8.84-4.69 8.84-9.45v-8.87c0-4.2-2.7-8.78-8.39-8.78zm1.21 5.3h4.66c2.9 0 3.62 2.29 3.62 4.14v7.94c0 2.48-.92 4.07-3.49 4.07h-4.79c-2.52 0-3.37-1.99-3.37-4v-8.34c0-2.05.98-3.81 3.37-3.81zm53.17-4.9c-6.09 0-8.31 4.5-8.31 8.45v9.26c0 4.56 2.49 8.79 8.31 8.79h6.42c5.88 0 8.3-4.49 8.3-8.85v-9.47c0-4-2.7-8.18-7.98-8.18zm1.12 5.3h4.46c2.42 0 3.34 1.89 3.34 3.74v8.21c0 2.01-.72 3.8-3.21 3.8h-5.08c-2.22 0-2.74-1.86-2.74-3.74v-8.66c0-1.86.85-3.35 3.23-3.35zm-121.3-5.5h9.1v12.05h1.24l10.1-12.12h8.3l-9.29 11.72 8.4 15.31h-7.02l-6.35-11.37-5.38 6.06v5.38h-6.42v-22.19zm30.05 0h17.68c5.22 0 7.12 4.17 7.12 7.39 0 3.67-2.09 7.17-5.81 8.1l6.22 11.37h-7l-5.82-10.97h-6.01v11.04h-6.19v-16.93h15.59c2.42 0 3.34-1.55 3.34-3.01 0-1.29-.85-2.61-3.01-2.61h-14.53zm52.2.13h8.4l11.05 15.56h.65v-15.56h6.22v26.9h-6.42l-10.62-15.84h-.75v15.84h-6.25v-22.59z"
+            stroke="url(#g29)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            style="stroke-dasharray:1200;stroke-dashoffset:1200;animation:drawText 3s ease-out 2.5s forwards" />
+          <rect x="0" y="110" width="200" height="1.5" fill="url(#sG)" opacity=".25"
+            style="animation:scanBar 6s linear 3.5s infinite" />
+
+          <defs>
+            <filter id="rB">
+              <feGaussianBlur in="SourceGraphic" stdDeviation=".5" />
+            </filter>
+            <radialGradient id="pG" cx=".5" cy=".5" r=".5">
+              <stop stop-color="#00d4ff" />
+              <stop offset=".6" stop-color="#007f8b" stop-opacity=".3" />
+              <stop offset="1" stop-color="#004b57" stop-opacity="0" />
+            </radialGradient>
+            <linearGradient id="sG" x1="0" x2="200" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#00d4ff" stop-opacity="0" />
+              <stop offset=".5" stop-color="#00d4ff" />
+              <stop offset="1" stop-color="#00d4ff" stop-opacity="0" />
+            </linearGradient>
+            <radialGradient id="g0" cx="0" cy="0" r="1" gradientTransform="translate(100 101) scale(148 147)"
+              gradientUnits="userSpaceOnUse">
+              <stop stop-color="#18FFFF" />
+              <stop offset=".79" stop-color="#18FFFF" stop-opacity=".04" />
+              <stop offset="1" stop-color="#18FFFF" stop-opacity="0" />
+            </radialGradient>
+            <radialGradient id="g1" cx="0" cy="0" r="1" gradientTransform="translate(100 119) scale(127 126)"
+              gradientUnits="userSpaceOnUse">
+              <stop stop-color="#2ffcb0" />
+              <stop offset=".79" stop-color="#2ffcb0" stop-opacity=".04" />
+              <stop offset="1" stop-color="#2ffcb0" stop-opacity="0" />
+            </radialGradient>
+            <linearGradient id="g10" x1="56" x2="143" y1="62" y2="62" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#2ffcb0" />
+              <stop offset="1" stop-color="#00d4ff" />
+            </linearGradient>
+            <linearGradient id="g11" x1="55" x2="144" y1="62" y2="62" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#2ffcb0" />
+              <stop offset="1" stop-color="#00d4ff" />
+            </linearGradient>
+            <linearGradient id="g13" x1="27" x2="173" y1="131" y2="131" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#00d4ff" />
+              <stop offset="1" stop-color="#66ffff" />
+            </linearGradient>
+            <linearGradient id="g14" x1="26" x2="174" y1="131" y2="131" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#00d4ff" />
+              <stop offset="1" stop-color="#66ffff" />
+            </linearGradient>
+            <linearGradient id="g15" x1="36" x2="164" y1="131" y2="131" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#007f8b" />
+              <stop offset="1" stop-color="#00d4ff" />
+            </linearGradient>
+            <linearGradient id="g16" x1="36" x2="164" y1="131" y2="131" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#007f8b" />
+              <stop offset="1" stop-color="#00d4ff" />
+            </linearGradient>
+            <linearGradient id="g18" x1="76" x2="122" y1="131" y2="131" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#0ff" />
+              <stop offset="1" stop-color="#007f8b" />
+            </linearGradient>
+            <linearGradient id="g19" x1="75" x2="123" y1="131" y2="131" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#0ff" />
+              <stop offset="1" stop-color="#00d4ff" />
+            </linearGradient>
+            <radialGradient id="g20" cx="0" cy="0" r="1" gradientTransform="translate(99 131) scale(20)"
+              gradientUnits="userSpaceOnUse">
+              <stop stop-color="#007f8b" />
+              <stop offset=".8" stop-color="#007f8b" stop-opacity=".04" />
+              <stop offset="1" stop-color="#007f8b" stop-opacity="0" />
+            </radialGradient>
+            <radialGradient id="g21" cx="0" cy="0" r="1" gradientTransform="translate(99 131) scale(20)"
+              gradientUnits="userSpaceOnUse">
+              <stop stop-color="#00d4ff" />
+              <stop offset="1" stop-color="#007f8b" />
+            </radialGradient>
+            <radialGradient id="g22" cx="0" cy="0" r="1" gradientTransform="translate(99 131) scale(15)"
+              gradientUnits="userSpaceOnUse">
+              <stop stop-color="#007f8b" />
+              <stop offset=".8" stop-color="#007f8b" stop-opacity=".04" />
+              <stop offset="1" stop-color="#007f8b" stop-opacity="0" />
+            </radialGradient>
+            <radialGradient id="g23" cx="0" cy="0" r="1" gradientTransform="translate(58 130) scale(8)"
+              gradientUnits="userSpaceOnUse">
+              <stop stop-color="#007f8b" />
+              <stop offset="1" stop-color="#004b57" />
+            </radialGradient>
+            <radialGradient id="g27" cx="0" cy="0" r="1" gradientTransform="translate(145 131) scale(9)"
+              gradientUnits="userSpaceOnUse">
+              <stop stop-color="#007f8b" />
+              <stop offset="1" stop-color="#004b57" />
+            </radialGradient>
+            <linearGradient id="g29" x1="17" x2="183" y1="185" y2="185" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#007f8b" />
+              <stop offset=".5" stop-color="#00d4ff" />
+              <stop offset="1" stop-color="#007f8b" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+    </div>
+
+
+    <div class="scrl"><span>SCROLL</span>
+      <div class="sbar"></div>
+    </div>
+  </section>
+
+  <!-- ===== ISOMETRIC ARCHITECTURE ===== -->
+  <section class="isoS" id="iso">
+    <!-- The Global Connection SVG -->
+    <svg class="conn-svg" id="connSvg"></svg>
+
+    <div class="sec-hd rv">
+      <div class="sec-tag">ARQUITECTURA IA</div>
+      <h2 class="sec-h2">EL CEREBRO DE <span class="ac">KRONOS</span></h2>
+      <p class="sec-p">Tu empresa genera cientos de documentos, planillas y transacciones cada semana. KRONOS los
+        ingesta, procesa con IA y te entrega decisiones listas para actuar — en segundos, no en días.</p>
+    </div>
+
+    <div class="arch-grid">
+      <!-- Left Column: Inputs -->
+      <div class="arch-panel rv" style="transition-delay:.1s">
+        <div class="ilbl input-node" id="node-in-1">
+          <div class="ilt">DATOS DE ENTRADA //</div>
+          <div class="ild2">Todo lo que tu empresa ya genera hoy: planillas en Excel, facturas escaneadas, reportes
+            contables, registros de asistencia, encuestas de clientes y documentos SUNAT. No importa el formato.</div>
+          <div class="arch-tags">
+            <span class="atag">Excel</span><span class="atag">PDF</span><span class="atag">CSV</span><span
+              class="atag">API</span><span class="atag">OCR</span><span class="atag">Imágenes</span>
+          </div>
+        </div>
+        <div class="ilbl input-node" style="animation-delay:.2s" id="node-in-2">
+          <div class="ilt">KRONOS AI ENGINE v2.0 //</div>
+          <div class="ild2">Motor de inteligencia artificial entrenado con normativa peruana vigente. Calcula CTS, cruza
+            cuentas bancarias, detecta anomalías de asistencia, genera declaraciones SUNAT y predice flujo de caja — sin
+            intervención humana.</div>
+        </div>
+      </div>
+
+      <!-- Central Column: Processing -->
+      <div class="iso-wrap rv" style="transition-delay:.2s">
+        <svg class="iso-svg" id="isvg" viewBox="0 0 1100 700"></svg>
+        <!-- Simulated Terminal -->
+        <div class="box-term">
+          <span class="bt-hl">Procesando: Planilla Feb 2026</span><br>
+          <div class="bt-div">━━━━━━━━━━━━━━━━━━━━━━</div>
+          CTS Mayo <span class="bt-val">→ S/ 142,850.00</span><br>
+          Gratif. Jul <span class="bt-val">→ S/ 285,700.00</span><br>
+          <div class="bt-div">──────────────────────</div>
+          <span style="color:#fff">Cruce bancario: BCP + BBVA</span><br>
+          <span style="color:var(--mint)">✓</span> 847 transacciones conciliadas<br>
+          <span style="color:var(--gold)">⚠</span> 3 facturas sin match detectadas<br>
+          <div class="bt-div">──────────────────────</div>
+          <span style="color:#fff">SUNAT PLE: Libro 14.1 generado</span><br>
+          Registros procesados: 2,341<br>
+          Estado: <span
+            style="background:var(--mint);color:#000;padding:3px 8px;border-radius:2px;font-size:10px;font-weight:700;letter-spacing:1px">LISTO
+            PARA ENVÍO ✓</span>
+        </div>
+      </div>
+
+      <!-- Right Column: Outputs -->
+      <div class="arch-panel rv" style="transition-delay:.3s">
+        <div class="ilbl output-node" style="animation-delay:.3s" id="node-out-1">
+          <div class="ilt"><span class="ild"
+              style="background:var(--magenta);box-shadow:0 0 10px var(--magenta);margin-right:10px"></span>RESULTADOS
+            AUTOMÁTICOS //</div>
+          <div class="ild2">14 módulos generan entregables listos para usar: boletas de pago, libros electrónicos PLE,
+            dashboards de KPIs, alertas de documentos por vencer y reportes ejecutivos para gerencia. Todo sin que tu
+            equipo mueva un dedo.</div>
+        </div>
+        <div class="ilbl output-node" style="animation-delay:.4s" id="node-out-2">
+          <div class="ilt"><span class="ild"
+              style="background:var(--gold);box-shadow:0 0 10px var(--gold);margin-right:10px"></span>VELOCIDAD DE
+            PROCESAMIENTO //</div>
+          <div class="ild2">Lo que antes le tomaba a tu equipo 5 días de cierre contable, KRONOS lo procesa en 4 horas.
+            Planilla de 500 empleados calculada en 15 minutos. Consultas al AI respondidas en 3 segundos.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Speed Metrics Bar -->
+    <div class="speed-bar rv" style="transition-delay:.4s">
+      <div class="sg-item">
+        <div class="sg-val">500<span style="font-size:16px;color:var(--t3)">ms</span></div>
+        <div class="sg-lbl">Reconocimiento facial</div>
+      </div>
+      <div class="sg-item">
+        <div class="sg-val">15 <span style="font-size:16px;color:var(--t3)">min</span></div>
+        <div class="sg-lbl">Planilla de 500 empleados</div>
+      </div>
+      <div class="sg-item">
+        <div class="sg-val">4 <span style="font-size:16px;color:var(--t3)">hrs</span></div>
+        <div class="sg-lbl">Cierre contable mensual</div>
+      </div>
+      <div class="sg-item">
+        <div class="sg-val">3 <span style="font-size:16px;color:var(--t3)">seg</span></div>
+        <div class="sg-lbl">Respuesta AI Assistant</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FEATURES ===== -->
+  <section class="featS" id="feat">
+    <div class="sec-hd rv">
+      <div class="sec-tag">CAPACIDADES</div>
+      <h2 class="sec-h2">POR QUÉ ELEGIR <span class="ac">KRONOS</span></h2>
+      <p class="sec-p">Cada función está diseñada para eliminar la complejidad y entregar claridad instantánea a tu
+        equipo.</p>
+    </div>
+
+    <!-- Feature 1: Data Extraction -->
+    <div class="feat-row rv">
+      <div class="feat-txt rv">
+        <div class="feat-tag">Extracción de Datos</div>
+        <h3 class="feat-h3">PROCESAMIENTO DE<br>MÚLTIPLES FORMATOS</h3>
+        <p class="feat-p">KRONOS ingesta PDFs, imágenes, hojas de cálculo y documentos SUNAT. Convierte todo en datos
+          estructurados listos para automatizar tu contabilidad y RRHH.</p>
+        <div class="feat-tags">
+          <span class="ftag">Ingestión</span><span class="ftag">OCR</span><span class="ftag">Transformación</span><span
+            class="ftag">Escalable</span>
+        </div>
+      </div>
+      <div class="feat-vis rv">
+        <div class="fcard">
+          <div class="fcard-inner">
+            <div
+              style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--t3);text-transform:uppercase;margin-bottom:16px">
+              ■ Flujo de Datos</div>
+            <div class="cbars" id="cbars1"></div>
+            <div style="display:flex;gap:12px;margin-top:auto;padding-top:20px" id="ficons1"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 2: AI Assistant -->
+    <div class="feat-row">
+      <div class="feat-txt rv">
+        <div class="feat-tag">Asistente IA</div>
+        <h3 class="feat-h3">DECISIONES<br>EN TIEMPO REAL</h3>
+        <p class="feat-p">Pregúntale a KRONOS sobre cash flow, productividad de tu equipo o cumplimiento tributario.
+          Respuestas instantáneas basadas en datos reales de tu empresa.</p>
+        <div class="feat-tags">
+          <span class="ftag">Chat IA</span><span class="ftag">Predicción</span><span class="ftag">Alertas</span>
+        </div>
+      </div>
+      <div class="feat-vis rv">
+        <div class="fcard">
+          <div class="fcard-inner" style="gap:12px">
+            <div
+              style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--t3);text-transform:uppercase">
+              ■ AI Terminal</div>
+            <div id="aiTerm"
+              style="flex:1;overflow:hidden;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.8;color:var(--t2)">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 3: Facial Recognition -->
+    <div class="feat-row rev">
+      <div class="feat-txt rv">
+        <div class="feat-tag">Kronos Time</div>
+        <h3 class="feat-h3">RECONOCIMIENTO<br>FACIAL INTEGRADO</h3>
+        <p class="feat-p">Control de asistencia sin contacto. La cámara reconoce a tu personal en milisegundos. Sin
+          tarjetas, sin huellas, sin fraude.</p>
+        <div class="feat-tags">
+          <span class="ftag">Face ID</span><span class="ftag">Sin Contacto</span><span class="ftag">Anti-fraude</span>
+        </div>
+      </div>
+      <div class="feat-vis rv">
+        <div class="fcard">
+          <div class="fcard-inner" style="align-items:center;justify-content:center">
+            <svg width="200" height="200" viewBox="0 0 200 200" id="faceSvg"></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== MODULES ===== -->
+  <section class="modS" id="mods">
+    <div class="sec-hd rv">
+      <div class="sec-tag">14 MÓDULOS</div>
+      <h2 class="sec-h2">TODO LO QUE TU<br>EMPRESA <span class="ac">NECESITA</span></h2>
+      <p class="sec-p">Cada módulo funciona independiente o integrado. Activar, desactivar, escalar — tu decides.</p>
+    </div>
+    <div class="modG" id="modG"></div>
+  </section>
+
+  <!-- ===== STATS ===== -->
+  <section class="statS" id="stats">
+    <div class="statG">
+      <div class="sti rv">
+        <div class="stn" data-t="14">0</div>
+        <div class="stl">Módulos</div>
+      </div>
+      <div class="sti rv">
+        <div class="stn" data-t="99">0</div>
+        <div class="stl">S/. / Mes Starter</div>
+      </div>
+      <div class="sti rv">
+        <div class="stn" data-t="500">0</div>
+        <div class="stl">Empresas en Perú</div>
+      </div>
+      <div class="sti rv">
+        <div class="stn" data-t="24">0</div>
+        <div class="stl">Horas Monitoreo</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CTA ===== -->
+  <section class="ctaS" id="cta">
+    <div class="rv">
+      <h2 class="cta-h">¿LISTO PARA<br><span class="ac">DOMINAR TUS DATOS</span>?</h2>
+      <p class="cta-sb">Únete a las empresas peruanas que ya transformaron su gestión. Acceso PWA desde cualquier
+        dispositivo.</p>
+      <div class="cta-btns">
+        <a class="ctab p" href="#">Solicitar Demo →</a>
+        <a class="ctab s" href="#">Ver Precios</a>
+      </div>
+      <div class="cta-price">Desde <b>S/99/mes</b> · Plan Starter · Sin contratos</div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer>
+    <div class="fbrand">© 2026 KRONOS · CODE OPEN · PERÚ</div>
+    <div class="flinks"><a href="#">Plataforma</a><a href="#">Docs</a><a href="#">API</a><a href="#">Privacidad</a>
+    </div>
+  </footer>
+
+  <!-- ===== ANIMATIONS KEYFRAMES ===== -->
+  <style>
+    @keyframes gridP {
+
+      0%,
+      100% {
+        opacity: .15
+      }
+
+      50% {
+        opacity: .3
+      }
+    }
+
+    @keyframes netP {
+      0% {
+        opacity: .3
+      }
+
+      100% {
+        opacity: .5
+      }
+    }
+
+    @keyframes drawChart {
+      to {
+        stroke-dashoffset: 0
+      }
+    }
+
+    @keyframes drawText {
+      to {
+        stroke-dashoffset: 0
+      }
+    }
+
+    @keyframes scanBar {
+      0% {
+        transform: translateY(-222px);
+        opacity: 0
+      }
+
+      5% {
+        opacity: 1
+      }
+
+      95% {
+        opacity: 1
+      }
+
+      100% {
+        transform: translateY(222px);
+        opacity: 0
+      }
+    }
+
+    @keyframes rotGL {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    @keyframes rotGR {
+      to {
+        transform: rotate(-360deg)
+      }
+    }
+
+    @keyframes hH {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    @keyframes mH {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    @keyframes sH {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    @keyframes ppulse {
+
+      0%,
+      100% {
+        opacity: .3
+      }
+
+      50% {
+        opacity: .7
+      }
+    }
+  </style>
+
+  <!-- ===== MAIN SCRIPT ===== -->
+  <script>
+    (function () {
+
+      // ===== DOT GRID =====
+      const dg = document.getElementById('hdots'); let dh = '';
+      for (let r = 0; r < 26; r++)for (let c = 0; c < 16; c++) {
+        const x = 8 + c * 18, y = 8 + r * 18;
+        dh += `<circle cx="${x}" cy="${y}" r="1.2" fill="#00d4ff" opacity="0"><animate attributeName="opacity" from="0" to=".4" dur=".25s" begin="${(r * .018 + c * .025).toFixed(3)}s" fill="freeze"/></circle>`
+      }
+      dg.innerHTML = dh;
+
+      // ===== DYNAMIC SVG STREAMS =====
+      function drawStreams() {
+        const svg = document.getElementById('hstreams');
+        if (!svg) return;
+        const txt = document.querySelector('.htxt');
+        const hlogo = document.getElementById('hlogo');
+        const hero = document.getElementById('hero');
+        if (!txt || !hero || !hlogo) return;
+
+        const hR = hero.getBoundingClientRect();
+        const tR = txt.getBoundingClientRect();
+        const lR = hlogo.getBoundingClientRect();
+
+        const isMobile = window.innerWidth <= 1024;
+
+        let paths = '';
+        const colors = ['#00d4ff', '#FFD600', '#18FFFF', '#2FFCB0', '#E930FF', '#00E58A', '#FF7A2F'];
+        const numLines = isMobile ? 42 : 36;
+
+        for (let i = 0; i < numLines; i++) {
+          const c = colors[Math.floor(Math.random() * colors.length)];
+          const thk = Math.random();
+          const sw = thk < 0.15 ? (Math.random() * 4 + 5) : (Math.random() * 1.5 + 0.5);
+          const op = thk < 0.15 ? 0.6 : 0.35;
+
+          let pathD = '';
+          let startY = 0;
+          let endX = hR.width * (0.65 + Math.random() * 0.35);
+
+          if (isMobile) {
+            // Mobile Vertical-Horizontal Matrix Layout
+            const isVertical = Math.random() > 0.6;
+            const startX = isVertical ? (hR.width * 0.1 + hR.width * 0.8 * Math.random()) : 0;
+            startY = isVertical ? 0 : (hR.height * 0.05 + hR.height * 0.9 * Math.random());
+
+            let pX = 20, pY = 20;
+
+            if (isVertical) {
+              let finalY = hR.height;
+              pathD = `M ${startX},${startY}`;
+
+              // Check collision from top to bottom
+              let l1 = lR.left - hR.left - pX, r1 = lR.right - hR.left + pX, t1 = lR.top - hR.top - pY, b1 = lR.bottom - hR.top + pY;
+              let l2 = tR.left - hR.left - pX, r2 = tR.right - hR.left + pX, t2 = tR.top - hR.top - pY, b2 = tR.bottom - hR.top + pY;
+
+              // Quick unified avoidance bounding box (since they stack vertically)
+              let uniL = Math.min(l1, l2), uniR = Math.max(r1, r2);
+              let uniT = Math.min(t1, t2), uniB = Math.max(b1, b2);
+
+              if (startX > uniL && startX < uniR) {
+                let routeX = (startX - uniL < uniR - startX) ? uniL - 10 - Math.random() * 20 : uniR + 10 + Math.random() * 20;
+                let routeY1 = uniT - 30 - Math.random() * 40;
+                let routeY2 = uniB + 30 + Math.random() * 40;
+                let endXX = startX + (Math.random() - 0.5) * 40;
+
+                pathD += ` L ${startX},${routeY1}`;
+                pathD += ` C ${startX},${routeY1 + Math.abs(routeX - startX) * 0.5} ${routeX},${routeY1 + Math.abs(routeX - startX) * 0.5} ${routeX},${routeY1 + Math.abs(routeX - startX)}`;
+                pathD += ` L ${routeX},${routeY2 - Math.abs(routeX - startX)}`;
+                pathD += ` C ${routeX},${routeY2 - Math.abs(routeX - startX) * 0.5} ${endXX},${routeY2 - Math.abs(routeX - startX) * 0.5} ${endXX},${routeY2}`;
+                pathD += ` L ${endXX},${finalY}`;
+              } else {
+                pathD += ` L ${startX + (Math.random() - 0.5) * 30},${finalY}`;
+              }
+              endX = parseFloat(pathD.split(',').pop()); // Fix animation length hack for verticals
+            } else {
+              // Horizontal Mobile Lines
+              let finalY = startY;
+              pathD = `M 0,${startY}`;
+              let l1 = lR.left - hR.left - pX, r1 = lR.right - hR.left + pX, t1 = lR.top - hR.top - pY, b1 = lR.bottom - hR.top + pY;
+              let l2 = tR.left - hR.left - pX, r2 = tR.right - hR.left + pX, t2 = tR.top - hR.top - pY, b2 = tR.bottom - hR.top + pY;
+
+              // Find which box we might hit horizontally
+              let targetBox = null;
+              if (startY > t1 && startY < b1) targetBox = { l: l1, r: r1, t: t1, b: b1 };
+              if (startY > t2 && startY < b2) targetBox = { l: l2, r: r2, t: t2, b: b2 };
+
+              if (targetBox) {
+                let routeY = (startY - targetBox.t < targetBox.b - startY) ? targetBox.t - 15 - Math.random() * 20 : targetBox.b + 15 + Math.random() * 20;
+                let S1x = Math.max(0, targetBox.l - 40 - Math.random() * 30);
+                let S2x = targetBox.l + 10;
+                let E1x = targetBox.r - 10;
+                let E2x = targetBox.r + 40 + Math.random() * 30;
+
+                finalY = startY + (Math.random() - 0.5) * 40;
+
+                pathD += ` L ${S1x},${startY}`;
+                pathD += ` C ${S1x + (S2x - S1x) * 0.5},${startY} ${S1x + (S2x - S1x) * 0.5},${routeY} ${S2x},${routeY}`;
+                pathD += ` L ${E1x},${routeY}`;
+                pathD += ` C ${E1x + (E2x - E1x) * 0.5},${routeY} ${E1x + (E2x - E1x) * 0.5},${finalY} ${E2x},${finalY}`;
+                pathD += ` L ${hR.width},${finalY}`;
+                endX = hR.width;
+              } else {
+                pathD += ` L ${hR.width},${startY + (Math.random() - 0.5) * 20}`;
+                endX = hR.width;
+              }
+            }
+
+          } else {
+            // Desktop Original Logic (Wrap Left Text Only)
+            startY = hR.height * 0.10 + (hR.height * 0.8 * (i / (numLines - 1)));
+            let pX = 40, pY = 30;
+            let tx1 = tR.left - hR.left - pX, tx2 = tR.right - hR.left + pX, ty1 = tR.top - hR.top - pY, ty2 = tR.bottom - hR.top + pY - 20;
+
+            pathD = `M 0,${startY}`;
+            let finalY = startY;
+
+            if (startY > ty1 && startY < ty2 && tR.width > 0) {
+              const avoidDistTop = startY - ty1;
+              const avoidDistBot = ty2 - startY;
+
+              let routeY = (avoidDistTop < avoidDistBot) ? ty1 - (numLines - i) * 2.5 - Math.random() * 10 : ty2 + i * 2.5 + Math.random() * 10;
+
+              const S1x = Math.max(0, tx1 - 80 - Math.random() * 60), S2x = tx1 + 20, E1x = tx2 - 20, E2x = tx2 + 80 + Math.random() * 60;
+              finalY = startY + (Math.random() - 0.5) * 90;
+
+              pathD += ` L ${S1x},${startY}`;
+              pathD += ` C ${S1x + (S2x - S1x) * 0.5},${startY} ${S1x + (S2x - S1x) * 0.5},${routeY} ${S2x},${routeY}`;
+              pathD += ` L ${E1x},${routeY}`;
+              pathD += ` C ${E1x + (E2x - E1x) * 0.5},${routeY} ${E1x + (E2x - E1x) * 0.5},${finalY} ${E2x},${finalY}`;
+              pathD += ` L ${endX},${finalY}`;
+            } else {
+              finalY = startY + (Math.random() - 0.5) * 40;
+              const midX = endX * (0.4 + Math.random() * 0.2);
+              pathD += ` Q ${midX},${startY} ${endX},${finalY}`;
+            }
+          }
+
+          // Animation Attributes
+          const len = (endX || hR.height) + hR.width * 0.5;
+          const dur = 3 + Math.random() * 5;
+          const delay = Math.random() * 2;
+
+          paths += `<path d="${pathD}" fill="none" stroke="${c}" stroke-width="${sw}" opacity="${op}" stroke-dasharray="${len}" stroke-dashoffset="${len}" stroke-linecap="round">
+       <animate attributeName="stroke-dashoffset" values="${len};0" dur="${dur}s" begin="${delay}s" fill="freeze" />
+       </path>`;
+
+          if (Math.random() > 0.4) {
+            paths += `<path d="${pathD}" fill="none" stroke="#fff" stroke-width="${sw * 0.9}" opacity="0" stroke-dasharray="10 9999">
+         <animate attributeName="stroke-dashoffset" values="${len};-50" dur="${dur * 0.65}s" begin="${delay + 1 + Math.random() * 4}s" repeatCount="indefinite" />
+         <animate attributeName="opacity" values="0;0.9;0" dur="${dur * 0.65}s" begin="${delay + 1}s" repeatCount="indefinite" />
+         </path>`;
+          }
+        }
+
+        svg.innerHTML = `
+    <defs>
+      <filter id="glowFlow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="3.5" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+      </filter>
+    </defs>
+    <g filter="url(#glowFlow)">${paths}</g>
+  `;
+      }
+      // Render dynamically when layout settles
+      setTimeout(drawStreams, 150);
+      window.addEventListener('resize', () => {
+        const svg = document.getElementById('hstreams');
+        if (svg) svg.innerHTML = '';
+        clearTimeout(window.streamTimeout);
+        window.streamTimeout = setTimeout(drawStreams, 200);
+      });
+
+
+      // ===== EYE TRACKING =====
+      const ig = document.getElementById('iG'), lf = document.getElementById('hlogo');
+      let ex = 0, ey = 0, etx = 0, ety = 0, sx = 0, sy = 0, st = 0;
+
+      document.addEventListener('mousemove', e => {
+        const r = lf.getBoundingClientRect();
+        const svx = (e.clientX - r.left) * (200 / r.width);
+        const svy = (e.clientY - r.top) * (222 / r.height);
+
+        const dx = svx - 99, dy = svy - 130.7;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        const f = Math.min(d / 150, 1), ef = 1 - Math.pow(1 - f, 2);
+        if (d > .1) { etx = (dx / d) * 7 * ef; ety = (dy / d) * 4 * ef; }
+      });
+
+      (function aE() {
+        ex += (etx - ex) * .07; ey += (ety - ey) * .07;
+        st++;
+        if (st > 140) {
+          sx = (Math.random() - .5) * .25; sy = (Math.random() - .5) * .12;
+          st = Math.floor(Math.random() * 50);
+        }
+        sx *= .96; sy *= .96;
+        if (ig) ig.setAttribute('transform', `translate(${(ex + sx).toFixed(3)},${(ey + sy).toFixed(3)})`);
+        requestAnimationFrame(aE);
+      })();
+
+      // Blink
+      const eT = document.getElementById('eT'), eB = document.getElementById('eB'); let bl = 0;
+      function bk() { if (bl) return; bl = 1; eT.style.transform = 'translateY(18px)'; eT.style.transition = 'transform .08s ease-in'; eB.style.transform = 'translateY(-18px)'; eB.style.transition = 'transform .08s ease-in'; setTimeout(() => { eT.style.transform = ''; eT.style.transition = 'transform .15s ease-out'; eB.style.transform = ''; eB.style.transition = 'transform .15s ease-out'; bl = 0 }, 150); setTimeout(() => { bk(); if (Math.random() < .12) setTimeout(bk, 250) }, 2200 + Math.random() * 4500) }
+      setTimeout(bk, 3500);
+
+      // ===== ISOMETRIC NEURAL ENGINE (MAXIMALIST) =====
+      function drawIsoEngine() {
+        const svg = document.getElementById('connSvg');
+        const is = document.getElementById('isvg');
+        const isoS = document.getElementById('iso');
+        if (!svg || !is || !isoS) return;
+
+        const w = isoS.offsetWidth, h = isoS.offsetHeight;
+        svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+
+        // --- 1. Draw Global Connections (Hyper-Creative Fiber Optics) ---
+        let cHtml = `<defs>
+          <filter id="gglow"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <filter id="gglow2"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <filter id="neonGl"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <linearGradient id="gradIn" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#00d4ff"><animate attributeName="stop-color" values="#00d4ff;#007f8b;#00d4ff" dur="3s" repeatCount="indefinite"/></stop>
+            <stop offset="100%" stop-color="#2ffcb0"/>
+          </linearGradient>
+          <linearGradient id="gradOut" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#e930ff"><animate attributeName="stop-color" values="#e930ff;#ff3860;#e930ff" dur="3s" repeatCount="indefinite"/></stop>
+            <stop offset="100%" stop-color="#ffd600"/>
+          </linearGradient>
+        </defs>`;
+
+        // Render Background Motherboard Grid
+        for (let i = 0; i < w; i += 80) {
+          cHtml += `<line x1="${i}" y1="0" x2="${i}" y2="${h}" stroke="rgba(0,212,255,0.03)" stroke-width="1" />`;
+          if (i % 160 === 0) cHtml += `<line x1="${i}" y1="0" x2="${i}" y2="${h}" stroke="rgba(0,212,255,0.05)" stroke-width="2" />`;
+        }
+        for (let j = 0; j < h; j += 80) {
+          cHtml += `<line x1="0" y1="${j}" x2="${w}" y2="${j}" stroke="rgba(0,212,255,0.03)" stroke-width="1" />`;
+          if (j % 160 === 0) cHtml += `<line x1="0" y1="${j}" x2="${w}" y2="${j}" stroke="rgba(0,212,255,0.05)" stroke-width="2" />`;
+        }
+
+        const sR = isoS.getBoundingClientRect();
+        const CX = w / 2, CY = h / 2 + 50; // Core central point
+
+        function getPortSq(id, isLeft) {
+          const el = document.getElementById(id);
+          if (!el) return { x: isLeft ? 100 : w - 100, y: CY };
+          const r = el.getBoundingClientRect();
+          return { x: isLeft ? (r.right - sR.left) : (r.left - sR.left), y: (r.top - sR.top + r.height / 2) };
+        }
+
+        const ports = [
+          { p: getPortSq('node-in-1', true), t: 'in', c: '#00d4ff', l: true },
+          { p: getPortSq('node-in-2', true), t: 'in', c: '#FFD600', l: true },
+          { p: getPortSq('node-out-1', false), t: 'out', c: '#E930FF', l: false },
+          { p: getPortSq('node-out-2', false), t: 'out', c: '#FFD600', l: false }
+        ];
+
+        ports.forEach((port, idx) => {
+          const isLeft = port.l;
+          const ex = isLeft ? CX - 240 : CX + 240;
+          const ey = CY + (idx % 2 === 0 ? -70 : 70);
+
+          const ctrl1X = isLeft ? port.p.x + 220 : port.p.x - 220;
+          const ctrl2X = isLeft ? ex - 140 : ex + 140;
+
+          // Main Spline
+          const pD = `M ${port.p.x},${port.p.y} C ${ctrl1X},${port.p.y} ${ctrl2X},${ey} ${ex},${ey}`;
+          const gradId = isLeft ? 'url(#gradIn)' : 'url(#gradOut)';
+
+          // 1. Ambient Background Glow
+          cHtml += `<path d="${pD}" fill="none" stroke="${port.c}" stroke-width="12" filter="url(#gglow)" opacity="0.1" />`;
+
+          // 2. Main Energy Core (Thick glowing dashed)
+          cHtml += `<path d="${pD}" fill="none" stroke="${gradId}" stroke-width="3.5" filter="url(#neonGl)" opacity="0.8" stroke-dasharray="14 26" stroke-linecap="round" style="animation: ${isLeft ? 'flowIn' : 'flowOut'} 0.8s linear infinite ${!isLeft ? 'reverse' : ''}"/>`;
+          cHtml += `<path d="${pD}" fill="none" stroke="${gradId}" stroke-width="1.5" opacity="0.95" />`;
+
+          // 3. Multi-Layered Fiber Optics (Parallel offset splines)
+          for (let f = 1; f <= 4; f++) {
+            const offY1 = (f % 2 === 0 ? 1 : -1) * (3 + f * 4);
+            const offY2 = (f % 2 === 0 ? -1 : 1) * (3 + f * 4);
+            const subD = `M ${port.p.x},${port.p.y + offY1} C ${ctrl1X},${port.p.y + offY1} ${ctrl2X},${ey + offY2} ${ex},${ey + offY2}`;
+
+            cHtml += `<path d="${subD}" fill="none" stroke="${port.c}" stroke-width="1" opacity="${0.6 - f * 0.1}" stroke-dasharray="${4 + f * 3} ${12 + f * 6}" stroke-linecap="round" filter="url(#neonGl)" style="animation: ${isLeft ? 'flowIn' : 'flowOut'} ${1.2 + f * 0.4}s linear infinite ${!isLeft ? 'reverse' : ''}"/>`;
+            cHtml += `<path d="${subD}" fill="none" stroke="#ffffff" stroke-width="0.3" opacity="${0.3 - f * 0.05}" />`;
+          }
+
+          // 4. Circuit Tracers (Orthogonal sharp lines overlapping organic curves)
+          const chamfer = 30;
+          const trY1 = port.p.y + (idx % 2 === 0 ? -40 : 40);
+          const trY2 = ey + (idx % 2 === 0 ? -20 : 20);
+          const dirX = isLeft ? 1 : -1;
+          const trPath = `M ${port.p.x},${trY1} L ${port.p.x + 80 * dirX},${trY1} L ${port.p.x + 80 * dirX + chamfer * dirX},${trY1 + chamfer} L ${ex - 80 * dirX - chamfer * dirX},${trY1 + chamfer} L ${ex - 80 * dirX},${trY2} L ${ex},${trY2}`;
+          cHtml += `<path d="${trPath}" fill="none" stroke="${port.c}" stroke-width="1" opacity="0.4" stroke-dasharray="2 4" />`;
+          cHtml += `<path d="${trPath}" fill="none" stroke="${gradId}" stroke-width="1.5" stroke-dasharray="60 400" stroke-linecap="round" style="animation: ${isLeft ? 'flowIn' : 'flowOut'} 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite ${!isLeft ? 'reverse' : ''}"/>`;
+
+          // 5. High-Fidelity Data Packets
+          const dataCount = 5 + Math.floor(Math.random() * 3);
+          for (let p = 0; p < dataCount; p++) {
+            const paId = `pPath_${idx}_${p}`;
+            const dirD = isLeft ? pD : `M ${ex},${ey} C ${ctrl2X},${ey} ${ctrl1X},${port.p.y} ${port.p.x},${port.p.y}`;
+            cHtml += `<path id="${paId}" d="${dirD}" fill="none" />`;
+
+            // Cyber Packet Group
+            cHtml += `<g filter="url(#gglow2)">
+                <animateMotion href="#${paId}" dur="${1.8 + Math.random() * 2}s" begin="${Math.random() * 4}s" repeatCount="indefinite" />
+                <circle r="3.5" fill="#fff"/>
+                <circle r="8" fill="none" stroke="${port.c}" stroke-width="2" stroke-dasharray="4 2" style="animation: pSpin 2s linear infinite"/>
+                <line x1="-12" y1="0" x2="12" y2="0" stroke="#fff" stroke-width="1"/>
+              </g>`;
+          }
+
+          // 6. Docking Nodes (Interface points)
+          const nx = port.p.x, ny = port.p.y;
+          cHtml += `<circle cx="${nx}" cy="${ny}" r="8" fill="var(--bg2)" stroke="${port.c}" stroke-width="2" filter="url(#gglow)" />`;
+          cHtml += `<circle cx="${nx}" cy="${ny}" r="4" fill="${port.c}" style="animation: ppulse 1.5s infinite" />`;
+          cHtml += `<polygon points="${nx},${ny - 14} ${nx + 12},${ny - 7} ${nx + 12},${ny + 7} ${nx},${ny + 14} ${nx - 12},${ny + 7} ${nx - 12},${ny - 7}" fill="none" stroke="${port.c}" stroke-width="1" opacity="0.6" style="transform-origin:${nx}px ${ny}px; animation: pSpin 6s linear infinite"/>`;
+        });
+        svg.innerHTML = cHtml;
+
+        // --- 2. Draw Central Core (Inner SVG) ---
+        const iCx = 550, iCy = 350;
+        function iso(x, y, z = 0) { const a = Math.PI / 4, rx = x * Math.cos(a) - y * Math.sin(a), ry = x * Math.sin(a) + y * Math.cos(a); return { x: iCx + rx, y: iCy + ry * 0.5 - z } }
+        function pS(pts, f, s, sw = 1, op = 1) { return `<path d="M${pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' L')} Z" fill="${f}" stroke="${s}" stroke-width="${sw}" opacity="${op}"/>` }
+
+        let iHtml = `<defs>
+          <linearGradient id="scF" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#00d4ff" stop-opacity="0"/><stop offset=".5" stop-color="#00d4ff" stop-opacity=".5"/><stop offset="1" stop-color="#00d4ff" stop-opacity="0"/></linearGradient>
+          <filter id="cGl"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>`;
+
+        // Concentric Isometric Rings (Ellipses) directly drawn
+        [420, 320, 220].forEach((r, i) => {
+          iHtml += `<ellipse cx="${iCx}" cy="${iCy}" rx="${r}" ry="${r * 0.5}" fill="none" stroke="var(--cyan)" opacity="${0.15 + i * 0.15}" stroke-width="${1.5 + i}" stroke-dasharray="${15 - i * 3} ${10 + i * 5}" style="transform-origin: ${iCx}px ${iCy}px; animation: pSpin ${40 - i * 10}s linear infinite ${i % 2 === 0 ? 'reverse' : ''}" />`;
+          iHtml += `<ellipse cx="${iCx}" cy="${iCy}" rx="${r + 16}" ry="${(r + 16) * 0.5}" fill="none" stroke="var(--cyan)" opacity="0.08" stroke-width="1" />`;
+        });
+
+        // The Core Base Hexagon (Diamond in iso)
+        const bs = 160;
+        const bPts = [iso(-bs, -bs), iso(bs, -bs), iso(bs, bs), iso(-bs, bs)];
+        const bTop = [iso(-bs, -bs, 50), iso(bs, -bs, 50), iso(bs, bs, 50), iso(-bs, bs, 50)];
+        iHtml += pS(bPts, 'rgba(10,14,20,0.95)', 'rgba(0,212,255,0.6)', 2, 1);
+
+        // Core walls (Transparent Data Blocks)
+        iHtml += pS([bPts[0], bPts[1], bTop[1], bTop[0]], 'rgba(0,212,255,0.08)', 'rgba(0,212,255,0.4)', 1.5, 1);
+        iHtml += pS([bPts[1], bPts[2], bTop[2], bTop[1]], 'rgba(0,212,255,0.1)', 'rgba(0,212,255,0.4)', 1.5, 1);
+        iHtml += pS(bTop, 'url(#scF)', 'rgba(0,212,255,0.8)', 2, 1);
+
+        // Vertical Core Pillars & Energy Nodes
+        [iso(-bs * 0.85, -bs * 0.85), iso(bs * 0.85, -bs * 0.85), iso(bs * 0.85, bs * 0.85), iso(-bs * 0.85, bs * 0.85)].forEach((p, i) => {
+          iHtml += `<line x1="${p.x}" y1="${p.y}" x2="${p.x}" y2="${p.y - 240}" stroke="var(--cyan)" stroke-width="3" opacity="0.9"/>`;
+          iHtml += `<line x1="${p.x}" y1="${p.y}" x2="${p.x}" y2="${p.y - 240}" stroke="#fff" filter="url(#cGl)" stroke-width="5" opacity="0.5"/>`;
+          iHtml += `<circle cx="${p.x}" cy="${p.y - 240}" r="5" fill="#fff" filter="url(#cGl)" style="animation: ppulse ${1.2 + i * 0.2}s infinite"/>`;
+        });
+
+        // Inside the glass Core: Spinning Processing Unit
+        const scP = iso(0, 0, 50);
+        iHtml += `<g style="transform-origin: ${scP.x}px ${scP.y}px; animation: pSpin 8s linear infinite">`;
+        iHtml += `<rect x="${scP.x - 90}" y="${scP.y - 60}" width="180" height="120" fill="url(#scF)" opacity="0.8" />`;
+        iHtml += `<ellipse cx="${scP.x}" cy="${scP.y}" rx="40" ry="20" fill="none" stroke="var(--mint)" stroke-width="3" />`;
+        iHtml += `</g>`;
+
+        is.innerHTML = iHtml;
+      }
+
+      // Auto resize to redraw connections accurately
+      let rTi;
+      window.addEventListener('resize', () => {
+        clearTimeout(rTi);
+        rTi = setTimeout(() => {
+          requestAnimationFrame(drawIsoEngine);
+        }, 150);
+      });
+      setTimeout(drawIsoEngine, 200);
+
+      // ===== FEATURE CARD 1: Color bars =====
+      const cb1 = document.getElementById('cbars1');
+      [{ w: '85%', c: 'var(--cyan)', h: 7, dl: '.1s' }, { w: '55%', c: 'var(--gold)', h: 5, dl: '.3s' }, { w: '95%', c: 'var(--aqua)', h: 8, dl: '.15s' }, { w: '68%', c: 'var(--mint)', h: 5, dl: '.4s' }, { w: '42%', c: 'var(--magenta)', h: 4, dl: '.55s' }, { w: '78%', c: 'var(--green)', h: 6, dl: '.25s' }, { w: '60%', c: 'var(--orange)', h: 4, dl: '.45s' }, { w: '90%', c: 'var(--cyan)', h: 7, dl: '.2s' }].forEach(b => {
+        const d = document.createElement('div'); d.className = 'cbar'; d.style.cssText = `--w:${b.w};--h:${b.h}px;--dl:${b.dl};background:${b.c}`; cb1.appendChild(d);
+      });
+      // Icons
+      const fi1 = document.getElementById('ficons1');
+      [{ i: '💰', c: 'var(--gold)' }, { i: '📄', c: 'var(--cyan)' }, { i: '📊', c: 'var(--magenta)' }].forEach((ic, i) => {
+        const d = document.createElement('div'); d.className = 'dicon'; d.style.cssText = `background:${ic.c}18;border:1px solid ${ic.c}40;--dl:${i * .5}s`; d.textContent = ic.i; fi1.appendChild(d);
+      });
+
+      // ===== FEATURE CARD 2: AI Terminal =====
+      const at = document.getElementById('aiTerm');
+      const lines = ['<span style="color:var(--cyan)">kronos></span> Analizar cash flow Q1 2026', '', '<span style="color:var(--mint)">✓</span> Ingresos: S/ 1,245,000', '<span style="color:var(--mint)">✓</span> Egresos: S/ 890,500', '<span style="color:var(--mint)">✓</span> Utilidad neta: <span style="color:var(--mint)">S/ 354,500</span>', '', '<span style="color:var(--gold)">⚠</span> Alerta: Facturas por cobrar > 90 días', '<span style="color:var(--cyan)">→</span> Recomendación: Activar cobranza automática', '', '<span style="color:var(--cyan)">kronos></span> <span style="animation:blinker 1s step-end infinite">_</span>'];
+      at.innerHTML = lines.join('<br>');
+
+      // ===== FEATURE CARD 3: Face Recognition =====
+      const fs = document.getElementById('faceSvg');
+      let fsvg = `<rect x="10" y="10" width="180" height="180" rx="8" fill="var(--bg3)" stroke="var(--ln)" stroke-width="1"/>`;
+      // Face outline
+      fsvg += `<ellipse cx="100" cy="95" rx="38" ry="48" fill="none" stroke="var(--cyan)" stroke-width="1.5" stroke-dasharray="4 3" opacity=".6"/>`;
+      // Scanning lines
+      for (let i = 0; i < 8; i++) { fsvg += `<line x1="60" y1="${55 + i * 11}" x2="140" y2="${55 + i * 11}" stroke="var(--cyan)" stroke-width=".3" opacity=".3"/>` }
+      // Feature points
+      [[82, 78], [118, 78], [100, 98], [88, 112], [112, 112], [100, 125]].forEach(([x, y], i) => {
+        fsvg += `<circle cx="${x}" cy="${y}" r="3" fill="var(--cyan)" opacity=".7"><animate attributeName="opacity" values=".3;.9;.3" dur="${1.5 + i * .2}s" repeatCount="indefinite"/></circle>`;
+        fsvg += `<circle cx="${x}" cy="${y}" r="6" fill="none" stroke="var(--cyan)" stroke-width=".5" opacity=".3"><animate attributeName="r" values="4;8;4" dur="${2 + i * .3}s" repeatCount="indefinite"/></circle>`;
+      });
+      // Scan bar
+      fsvg += `<rect x="60" y="50" width="80" height="2" fill="var(--cyan)" opacity=".5"><animate attributeName="y" values="50;140;50" dur="3s" repeatCount="indefinite"/><animate attributeName="opacity" values=".5;.2;.5" dur="3s" repeatCount="indefinite"/></rect>`;
+      // Status text
+      fsvg += `<text x="100" y="165" text-anchor="middle" fill="var(--mint)" font-family="'JetBrains Mono',monospace" font-size="9" letter-spacing="2">VERIFICADO ✓</text>`;
+      fsvg += `<text x="100" y="178" text-anchor="middle" fill="var(--t3)" font-family="'JetBrains Mono',monospace" font-size="7" letter-spacing="1">ID: EMP-2847 · 99.7% MATCH</text>`;
+      fs.innerHTML = fsvg;
+
+      // ===== MODULES GRID =====
+      const mods = [
+        { i: '💰', n: 'Finanzas', d: 'Gestión contable, flujo de caja y reportes financieros.' },
+        { i: '👥', n: 'Planillas', d: 'Cálculo de CTS, gratificaciones y aportes SUNAT.' },
+        { i: '📊', n: 'NPS', d: 'Monitoreo de satisfacción del cliente en tiempo real.' },
+        { i: '📈', n: 'KPIs', d: 'Dashboard de indicadores por departamento y proyecto.' },
+        { i: '⏱️', n: 'Kronos Time', d: 'Control de asistencia con reconocimiento facial.' },
+        { i: '📄', n: 'Auditoría', d: 'Alertas de vencimiento de documentos y certificados.' },
+        { i: '🧠', n: 'AI Assistant', d: 'Consultas y automatización con inteligencia artificial.' },
+        { i: '🏛️', n: 'SUNAT', d: 'Facturación electrónica y declaraciones tributarias.' },
+        { i: '😊', n: 'Satisfacción', d: 'Encuestas de clima laboral y engagement interno.' },
+        { i: '🔒', n: 'Seguridad', d: 'Control de accesos, permisos y auditoría de sesiones.' },
+        { i: '📱', n: 'PWA Mobile', d: 'Acceso completo desde cualquier dispositivo móvil.' },
+        { i: '📋', n: 'Productividad', d: 'Tracking de tareas, Pomodoro y rendimiento.' },
+        { i: '🔔', n: 'Alertas', d: 'Notificaciones push inteligentes y programables.' },
+        { i: '📊', n: 'Reportes', d: 'Generación automática de reportes ejecutivos.' }
+      ];
+      const mg = document.getElementById('modG');
+      mods.forEach((m, i) => {
+        const d = document.createElement('div'); d.className = 'mdc rv'; d.style.transitionDelay = i * .04 + 's';
+        d.innerHTML = `<span class="mdc-i">${m.i}</span><div class="mdc-n">${m.n}</div><div class="mdc-d">${m.d}</div><div class="mdc-t">Ver módulo →</div>`; mg.appendChild(d)
+      });
+
+      // ===== SCROLL REVEAL + COUNTER =====
+      const obs = new IntersectionObserver(es => {
+        es.forEach(e => {
+          if (e.isIntersecting) {
+            e.target.classList.add('vis');
+            const sn = e.target.querySelector('.stn');
+            if (sn) { const t = +sn.dataset.t; let c = 0; const s = () => { c += Math.ceil(t / 35); if (c >= t) { sn.textContent = t + '+'; return } sn.textContent = c; requestAnimationFrame(s) }; s() }
+            obs.unobserve(e.target)
+          }
+        })
+      }, { threshold: .15 });
+      document.querySelectorAll('.rv').forEach(el => obs.observe(el));
+
+    })();
+  </script>
+  <style>
+    @keyframes blinker {
+      50% {
+        opacity: 0
+      }
+    }
+  </style>
+</body>
+
+</html>
