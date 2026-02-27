@@ -1500,6 +1500,22 @@
         min-height: 400px
       }
     }
+
+    /* ===== MOBILE PERFORMANCE: content-visibility ===== */
+    .isoS, .featS, .modS, .statS, .ctaS {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 800px;
+    }
+
+    /* ===== MOBILE PERFORMANCE: contain on isolated cards ===== */
+    .ilbl, .fcard, .mdc, .sg-item {
+      contain: layout style paint;
+    }
+
+    /* ===== MOBILE PERFORMANCE: offscreen animation pause ===== */
+    .offscreen *, .offscreen *::before, .offscreen *::after {
+      animation-play-state: paused !important;
+    }
   </style>
 </head>
 
@@ -2214,9 +2230,21 @@
     <g filter="url(#glowFlow)">${paths}</g>
   `;
       }
+      // ===== RESIZE DIMENSION CACHE =====
+      let cachedW = window.innerWidth, cachedH = window.innerHeight;
+      const RESIZE_THRESHOLD = 50;
+      function dimensionsChanged() {
+        const nw = window.innerWidth, nh = window.innerHeight;
+        if (Math.abs(nw - cachedW) > RESIZE_THRESHOLD || Math.abs(nh - cachedH) > RESIZE_THRESHOLD) {
+          cachedW = nw; cachedH = nh; return true;
+        }
+        return false;
+      }
+
       // Render dynamically when layout settles
       setTimeout(drawStreams, 150);
       window.addEventListener('resize', () => {
+        if (!dimensionsChanged()) return;
         const svg = document.getElementById('hstreams');
         if (svg) svg.innerHTML = '';
         clearTimeout(window.streamTimeout);
@@ -2227,6 +2255,7 @@
       // ===== EYE TRACKING =====
       const ig = document.getElementById('iG'), lf = document.getElementById('hlogo');
       let ex = 0, ey = 0, etx = 0, ety = 0, sx = 0, sy = 0, st = 0;
+      let heroVisible = true;
 
       document.addEventListener('mousemove', e => {
         const r = lf.getBoundingClientRect();
@@ -2239,17 +2268,31 @@
         if (d > .1) { etx = (dx / d) * 7 * ef; ety = (dy / d) * 4 * ef; }
       });
 
-      (function aE() {
-        ex += (etx - ex) * .07; ey += (ety - ey) * .07;
-        st++;
-        if (st > 140) {
-          sx = (Math.random() - .5) * .25; sy = (Math.random() - .5) * .12;
-          st = Math.floor(Math.random() * 50);
-        }
-        sx *= .96; sy *= .96;
-        if (ig) ig.setAttribute('transform', `translate(${(ex + sx).toFixed(3)},${(ey + sy).toFixed(3)})`);
-        requestAnimationFrame(aE);
-      })();
+      // Hero visibility observer — pauses RAF when hero is offscreen
+      const heroEl = document.getElementById('hero');
+      const heroObs = new IntersectionObserver(es => {
+        heroVisible = es[0].isIntersecting;
+        if (heroVisible) rafEye();
+      }, { threshold: 0 });
+      if (heroEl) heroObs.observe(heroEl);
+
+      let rafEyeId = 0;
+      function rafEye() {
+        if (rafEyeId) return;
+        (function aE() {
+          if (!heroVisible) { rafEyeId = 0; return; }
+          ex += (etx - ex) * .07; ey += (ety - ey) * .07;
+          st++;
+          if (st > 140) {
+            sx = (Math.random() - .5) * .25; sy = (Math.random() - .5) * .12;
+            st = Math.floor(Math.random() * 50);
+          }
+          sx *= .96; sy *= .96;
+          if (ig) ig.setAttribute('transform', `translate(${(ex + sx).toFixed(3)},${(ey + sy).toFixed(3)})`);
+          rafEyeId = requestAnimationFrame(aE);
+        })();
+      }
+      rafEye();
 
       // Blink
       const eT = document.getElementById('eT'), eB = document.getElementById('eB'); let bl = 0;
@@ -2414,9 +2457,10 @@
         is.innerHTML = iHtml;
       }
 
-      // Auto resize to redraw connections accurately
+      // Auto resize to redraw connections accurately (uses dimension cache)
       let rTi;
       window.addEventListener('resize', () => {
+        if (!dimensionsChanged()) return;
         clearTimeout(rTi);
         rTi = setTimeout(() => {
           requestAnimationFrame(drawIsoEngine);
@@ -2494,6 +2538,31 @@
         })
       }, { threshold: .15 });
       document.querySelectorAll('.rv').forEach(el => obs.observe(el));
+
+      // ===== SECTION VISIBILITY OBSERVER (pause/resume offscreen animations) =====
+      const secObs = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          const sec = entry.target;
+          if (entry.isIntersecting) {
+            sec.classList.remove('offscreen');
+            // Resume SVG animations
+            sec.querySelectorAll('svg').forEach(svg => {
+              if (typeof svg.unpauseAnimations === 'function') {
+                try { svg.unpauseAnimations(); } catch (_) {}
+              }
+            });
+          } else {
+            sec.classList.add('offscreen');
+            // Pause SVG animations (they don't respect CSS animation-play-state)
+            sec.querySelectorAll('svg').forEach(svg => {
+              if (typeof svg.pauseAnimations === 'function') {
+                try { svg.pauseAnimations(); } catch (_) {}
+              }
+            });
+          }
+        });
+      }, { rootMargin: '100px 0px' });
+      document.querySelectorAll('.isoS, .featS, .modS, .statS, .ctaS').forEach(s => secObs.observe(s));
 
     })();
   </script>
